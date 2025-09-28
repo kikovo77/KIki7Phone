@@ -1,0 +1,21 @@
+{
+    "name": "KikiPhone7",
+    "short_name": "KkPhone",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#a8d8f0",
+    "theme_color": "#a8d8f0",
+    "description": "一个高度可定制化的AI聊天应用界面。",
+    "icons": [
+        {
+            "src": "https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp",
+            "sizes": "192x192",
+            "type": "image/webp"
+        },
+        {
+            "src": "https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp",
+            "sizes": "512x512",
+            "type": "image/webp"
+        }
+    ]
+}

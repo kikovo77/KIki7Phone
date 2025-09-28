@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>AI Chat :: Final Version</title>
 
+    <!-- 【【【新增 PWA “身份证” 链接】】】 -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- =================================================================== -->
+
+
     <!-- =================================================================== -->
     <!-- 【V1.95 优化】新增元数据标签，用于生成漂亮的链接预览图 -->
     <!-- =================================================================== -->
@@ -9935,6 +9941,19 @@
             }
         };
         document.addEventListener('DOMContentLoaded', () => {
+
+            // ===================================================================
+            // 【【【新增 PWA “后台管家” 注册代码】】】
+            // ===================================================================
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker 注册成功，范围是:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Service Worker 注册失败:', error);
+                    });
+            }
 
             // ===================================================================
             // 【全新 V2.03】全局变量统一定义区
