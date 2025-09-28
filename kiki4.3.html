@@ -22,7 +22,7 @@
     <meta property="og:type" content="website">
     <!-- 【【【核心】】】请将下面的链接替换为您想用作预览图的图片URL -->
     <meta property="og:image"
-        content="https://tc-new.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250912/I4Xl/1206X1501/IMG_6556.jpeg/webp">
+        content="https://tc-new.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pk JCFqrWyl5f0KlZfm6UsKj-HyTuv/20250912/I4Xl/1206X1501/IMG_6556.jpeg/webp">
     <meta property="og:url" content="YOUR_WEBSITE_URL_HERE">
     <!-- =================================================================== -->
     <!-- 1. CSS 样式区 -->
@@ -12609,8 +12609,31 @@
 
                         if (messageToAppend) {
                             currentChat.history.push(messageToAppend);
-                            // 【【【核心修改】】】 如果用户还在此页面，则实时追加消息
-                            if (currentlyVisibleChatId === originalChatId) {
+
+                            // 【【【！！！核心通知逻辑！！！】】】
+                            // 检查：1. Service Worker 是否就绪 2. 页面是否在后台 3. 通知权限是否已获取
+                            if (navigator.serviceWorker.controller && document.hidden && Notification.permission === 'granted') {
+                                let notificationBody = '';
+                                if (messageToAppend.type === 'sticker') {
+                                    notificationBody = `[表情] ${messageToAppend.meaning || ''}`;
+                                } else if (messageToAppend.type === 'couple_status') {
+                                    notificationBody = '[情侣空间消息]';
+                                } else {
+                                    notificationBody = messageToAppend.content;
+                                }
+
+                                // 准备要发送给 Service Worker 的数据包
+                                const notificationData = {
+                                    title: currentChat.settings.aiName || currentChat.name,
+                                    body: notificationBody,
+                                    icon: currentChat.settings.aiAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp'
+                                };
+
+                                // 这就是“管家”把信交给“门房”的动作！
+                                navigator.serviceWorker.controller.postMessage(notificationData);
+
+                            } else if (currentlyVisibleChatId === originalChatId) {
+                                // 如果页面在前台，就像原来一样直接追加消息到屏幕上
                                 appendMessage(messageToAppend, messageContainer, true);
                             }
                         }
@@ -16070,7 +16093,27 @@
             }
 
             // --- 初始化 (V1.92 最终性能优化版) ---
+            // --- 初始化 (V1.92 最终性能优化版) ---
             async function initializeApp() {
+                // 【【【新增功能：注册 Service Worker 和请求通知权限】】】
+                if ('serviceWorker' in navigator) {
+                    try {
+                        // 注册我们的“门房”
+                        const registration = await navigator.serviceWorker.register('./service-worker.js');
+                        console.log('Service Worker 注册成功，范围是:', registration.scope);
+
+                        // 接着，请求通知权限
+                        const permission = await Notification.requestPermission();
+                        if (permission === 'granted') {
+                            console.log('通知权限已获取！');
+                        } else {
+                            console.log('用户拒绝了通知权限。');
+                        }
+                    } catch (error) {
+                        console.log('Service Worker 注册或权限请求失败:', error);
+                    }
+                }
+
                 // 【第一步：缓存】在所有操作开始前，一次性查找并缓存所有图标元素及其默认SVG
                 const iconConfig = [
                     { key: 'chat', elements: document.querySelectorAll('.new-app-icon[data-target="chat-list-screen"], .app-icon-preview[data-icon-key="chat"]') },
