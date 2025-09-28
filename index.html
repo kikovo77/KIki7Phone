@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AI Chat :: Final Version</title>
+    <title>KikiPhone</title>
 
     <!-- 【【【新增 PWA “身份证” 链接】】】 -->
     <link rel="manifest" href="manifest.json">
@@ -197,7 +197,7 @@
             /* 确保padding不会撑大盒子 */
             overflow-y: auto;
             /* 核心：当内容超出时，允许垂直滚动 */
-            background-color: #a8d8f0;
+            background-color: #202020;
             /* 天蓝色背景 */
             padding: 90px 0 110px 0;
             /* 顶部为状态栏和灵动岛留空，底部为Dock栏留空 */
@@ -5176,12 +5176,16 @@
         /* --- 底部Dock栏 --- */
         #bottom-dock {
             position: absolute;
-            bottom: -100px;
+            /* 恢复为 absolute 定位 */
+            bottom: 30px;
+            /* 【核心修改】设置一个正值，让它在布局的底部，而不是屏幕外 */
             left: 50%;
             transform: translateX(-50%);
             width: 80%;
             max-width: 340px;
             height: 75px;
+            z-index: 100;
+            /* 保留 z-index */
 
             /* --- 【V1.92 最终美化版】多层次样式叠加 --- */
             /* 1. 通透层(光泽) + 底层(基色) - 微调透明度以增强对比 */
@@ -7310,6 +7314,25 @@
             font-size: 14px;
             color: #666;
             font-weight: 500;
+        }
+
+        /* 
+        ===================================================================
+         【【【全新】】】智能响应式布局：处理矮屏幕下的导航栏
+        ===================================================================
+        */
+        @media (max-height: 850px) {
+
+            /* 规则1: 当屏幕高度小于等于850px时，将导航栏变为“浮动” */
+            #bottom-dock {
+                position: fixed;
+                /* 变为固定定位，浮动在屏幕上 */
+            }
+
+            /* 规则2: 同时，为内容区域增加更多底部空间，防止内容被导航栏遮挡 */
+            #home-screen {
+                padding-bottom: 150px;
+            }
         }
     </style>
 </head>
