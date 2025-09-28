@@ -9963,51 +9963,6 @@
                 });
             }
         };
-
-
-        // ===================================================================
-        // 【【【全新】】】浏览器通知功能函数区
-        // ===================================================================
-
-        /**
-         * 请求用户授权显示通知
-         */
-        function requestNotificationPermission() {
-            // 首先检查浏览器是否支持通知
-            if (!("Notification" in window)) {
-                console.log("这个浏览器不支持桌面通知");
-                return;
-            }
-
-            // 检查通知权限是否已经被授予或拒绝
-            // 如果是 "default"，意味着用户还没做过选择，我们就发起请求
-            if (Notification.permission === "default") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        console.log("通知权限已授予！");
-                    } else {
-                        console.log("用户拒绝了通知权限。");
-                    }
-                });
-            }
-        }
-
-        /**
-         * 显示一个浏览器通知
-         * @param {string} title - 通知的标题 (例如：AI的名字)
-         * @param {object} options - 通知的配置项
-         * @param {string} options.body - 通知的主体内容
-         * @param {string} options.icon - 通知的图标URL (例如：AI的头像)
-         */
-        function showNotification(title, options) {
-            // 再次检查浏览器是否支持，并确认权限已经被授予
-            if ("Notification" in window && Notification.permission === "granted") {
-                // 创建一个新的通知
-                const notification = new Notification(title, options);
-            }
-        }
-
-
         document.addEventListener('DOMContentLoaded', () => {
 
             // ===================================================================
@@ -12592,34 +12547,6 @@
                         if (currentlyVisibleChatId !== originalChatId) {
                             currentChat.unreadCount = (currentChat.unreadCount || 0) + 1;
                         }
-
-                        // ===================================================================
-                        // 【【【全新 伪离线通知 触发点】】】
-                        // ===================================================================
-                        // 只有当用户不在当前页面时，才显示通知
-                        if (document.hidden) {
-                            const aiName = currentChat.settings.aiName || currentChat.name;
-                            const aiAvatar = currentChat.settings.aiAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
-                            let notificationBody = '';
-
-                            // 根据消息类型决定通知内容
-                            if (action.type === 'text') {
-                                notificationBody = action.content;
-                            } else if (action.type === 'sticker') {
-                                notificationBody = `[表情] ${action.name}`;
-                            } else if (action.type === 'couple_request') {
-                                notificationBody = '向你发起了情侣关系邀请';
-                            }
-
-                            // 只有在有内容时才发送通知
-                            if (notificationBody) {
-                                showNotification(aiName, {
-                                    body: notificationBody,
-                                    icon: aiAvatar
-                                });
-                            }
-                        }
-                        // ===================================================================
 
                         const aiMessageBase = {
                             id: 'msg_' + Date.now() + Math.random(),
@@ -16144,8 +16071,6 @@
 
             // --- 初始化 (V1.92 最终性能优化版) ---
             async function initializeApp() {
-                requestNotificationPermission(); // 【【【新增】】】应用启动时，请求通知权限
-
                 // 【第一步：缓存】在所有操作开始前，一次性查找并缓存所有图标元素及其默认SVG
                 const iconConfig = [
                     { key: 'chat', elements: document.querySelectorAll('.new-app-icon[data-target="chat-list-screen"], .app-icon-preview[data-icon-key="chat"]') },
