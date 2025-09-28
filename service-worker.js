@@ -175,6 +175,14 @@ async function updateDataAndShowNotification(chatId, replyActions) {
     await db.set('chats', chats);
     console.log(`数据库已在后台更新！新增 ${messageCount} 条消息, 未读数: ${chat.unreadCount}`);
 
+    // 【【【新增的对讲机代码】】】
+    const channel = new BroadcastChannel('kiki-chat-updates');
+    channel.postMessage({ chatId: chatId });
+    channel.close();
+    // 【【【新增代码结束】】】
+
+
+
     const title = chat.settings.aiName || chat.name;
     const icon = chat.settings.aiAvatar || './icon-192x192.png';
 

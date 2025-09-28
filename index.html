@@ -15915,13 +15915,25 @@
                         const registration = await navigator.serviceWorker.register('./service-worker.js');
                         console.log('Service Worker 注册成功:', registration);
 
-                        // 请求通知权限
                         const permission = await Notification.requestPermission();
                         if (permission === 'granted') {
                             console.log('通知权限已获取！');
                         } else {
                             console.log('用户拒绝了通知权限，后台通知功能将不可用。');
                         }
+
+                        // 【【【新增的对讲机接收器】】】
+                        const channel = new BroadcastChannel('kiki-chat-updates');
+                        channel.onmessage = async (event) => {
+                            console.log('网页收到了来自 Service Worker 的更新通知:', event.data);
+                            // 收到通知后，重新从数据库加载最新的聊天数据
+                            await loadChats();
+                            // 如果更新的聊天正好是当前打开的，就刷新消息界面
+                            if (event.data.chatId === currentlyVisibleChatId) {
+                                renderMessages();
+                            }
+                        };
+                        // 【【【新增代码结束】】】
 
                         // 设置一个监听器，用于接收来自 Service Worker 的消息
                         navigator.serviceWorker.addEventListener('message', event => {
