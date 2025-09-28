@@ -119,58 +119,73 @@ async function handleAiFetchAndNotify(payload) {
     }
 }
 
-// 在后台更新数据并显示通知
+// 在后台更新数据并显示通知 (修复版)
 async function updateDataAndShowNotification(chatId, replyActions) {
-    // 1. 从 IndexedDB 读取最新的 chats 数据
     let chats = await db.get('chats') || [];
     const chat = chats.find(c => c.id === chatId);
-
     if (!chat) return;
 
-    // 2. 将 AI 的回复添加到聊天记录中
-    let notificationBody = '';
+    let firstValidNotificationBody = '';
     let messageCount = 0;
 
     for (const action of replyActions) {
         const aiMessageBase = {
             id: 'msg_' + Date.now() + Math.random() + messageCount,
             role: 'assistant',
-            timestamp: Date.now() + messageCount // 确保时间戳不完全一样
+            timestamp: Date.now() + messageCount
         };
-        let messageToAppend = { ...aiMessageBase, content: action.content || '[消息]', type: action.type, meaning: action.meaning };
 
-        // 简化处理，只处理文本和表情
-        if (action.type === 'text') {
-            messageToAppend.content = action.content;
-            if (!notificationBody) notificationBody = action.content; // 将第一条文本作为通知内容
-        } else if (action.type === 'sticker') {
-            messageToAppend.content = action.url;
-            if (!notificationBody) notificationBody = `[表情] ${action.name || ''}`;
-        } else {
-            messageToAppend.content = '[复合消息]';
-            if (!notificationBody) notificationBody = '[你收到一条新消息]';
+        let messageToAppend = { ...aiMessageBase, type: action.type };
+
+        // 【【【核心修复逻辑】】】
+        let currentMessageBody = '';
+        switch (action.type) {
+            case 'text':
+                messageToAppend.content = action.content;
+                currentMessageBody = action.content;
+                break;
+            case 'sticker':
+                messageToAppend.content = action.url;
+                messageToAppend.meaning = action.name; // AI返回的是name
+                currentMessageBody = `[表情] ${action.name || ''}`;
+                break;
+            case 'couple_request':
+                messageToAppend.statusType = 'ai-sends-invite';
+                messageToAppend.isActionable = true;
+                currentMessageBody = `[情侣空间消息] ${chat.settings.aiName || chat.name} 想和你建立情侣关系`;
+                break;
+            // 在这里可以补充其他 action 类型的处理
+            default:
+                messageToAppend.content = '[复合消息]';
+                currentMessageBody = '[你收到一条新消息]';
+                break;
+        }
+
+        // 只将第一条有意义的内容作为通知正文
+        if (!firstValidNotificationBody && currentMessageBody) {
+            firstValidNotificationBody = currentMessageBody;
         }
 
         chat.history.push(messageToAppend);
         messageCount++;
     }
 
-    // 3. 更新未读数
     chat.unreadCount = (chat.unreadCount || 0) + messageCount;
 
-    // 4. 将更新后的 chats 数据写回 IndexedDB
     await db.set('chats', chats);
-    console.log('数据库已在后台更新！');
+    console.log(`数据库已在后台更新！新增 ${messageCount} 条消息, 未读数: ${chat.unreadCount}`);
 
-    // 5. 显示通知
     const title = chat.settings.aiName || chat.name;
-    const icon = chat.settings.aiAvatar || './icon-192x192.png'; // 确保你有一个默认图标
+    const icon = chat.settings.aiAvatar || './icon-192x192.png';
+
+    // 【【【安全保障】】】确保通知内容永远不会是空的或 undefined
+    const finalBody = firstValidNotificationBody || (messageCount > 1 ? `你收到了 ${messageCount} 条新消息` : '你收到一条新消息');
 
     self.registration.showNotification(title, {
-        body: notificationBody,
+        body: finalBody,
         icon: icon,
         badge: icon,
-        tag: `chat-${chatId}` // 使用聊天ID作为标签，防止同一聊天的通知刷屏
+        tag: `chat-${chatId}`
     });
 }
 
