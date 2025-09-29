@@ -12277,109 +12277,94 @@
                 const chat = chats.find(c => c.id === activeChatId);
                 if (!chat) return;
 
-                // 【【【核心新增】】】 在请求开始前，记下原始的聊天ID
-                const originalChatId = activeChatId;
-
-                // 【【【核心新增：智能隐藏功能】】】
-                let historyModified = false; // 创建一个标记，判断历史记录是否被修改过
-                chat.history.forEach(msg => {
-                    // 检查消息内容是否包含特征字符串
-                    if (typeof msg.content === 'string' && (msg.content.includes('[错误:') || msg.content.includes('[系统提示:'))) {
-                        if (!msg.isHidden) { // 如果它当前不是隐藏状态
-                            msg.isHidden = true; // 就给它贴上“隐身”标签
-                            historyModified = true; // 标记我们做了修改
-                        }
-                    }
-                });
-
-                // 如果我们确实隐藏了某些消息
-                if (historyModified) {
-                    await saveChats();      // 立刻将这个修改保存到数据库
-                    renderMessages();       // 立刻刷新聊天界面，让这些消息消失
-                }
-
-                // --- 1. 核心数据准备 ---
+                // 【【【改造点 1：检查API设置】】】
                 const { baseUrl, apiKey, modelName } = state.apiSettings;
                 if (!baseUrl || !apiKey || !modelName) {
                     alert("请先在设置中填写完整的 API 信息！");
                     showScreen('api-settings-screen');
                     return;
                 }
-                const genBtnIcon = generateBtn.querySelector('svg');
+
+                // 【【【改造点 2：UI状态更新】】】
+                const genBtnIcon = generateBtn.querySelector('svg').cloneNode(true); // 克隆图标
                 generateBtn.innerHTML = '...';
                 generateBtn.disabled = true;
 
-                // --- 2. 【【【核心重构】】】递归加载所有关联内容 ---
-                const getAssociatedContent = (id, type, visitedIds = new Set()) => {
-                    const uniqueId = `${type}_${id}`;
-                    if (visitedIds.has(uniqueId)) return { before: '', after: '' };
-                    visitedIds.add(uniqueId);
-
-                    let item;
-                    let result = { before: '', after: '' };
-
-                    // 辅助函数，用于查找任何类型的可关联项
-                    const findItemInAnyAssetList = (itemId) => {
-                        if (presets.offlines) {
-                            const offlineItem = presets.offlines.find(p => p.id === itemId);
-                            if (offlineItem) return { item: offlineItem, type: 'offline' };
+                try {
+                    // --- 后续的 System Prompt 构建逻辑完全复用，无需修改 ---
+                    // 【智能隐藏功能】
+                    let historyModified = false;
+                    chat.history.forEach(msg => {
+                        if (typeof msg.content === 'string' && (msg.content.includes('[错误:') || msg.content.includes('[系统提示:'))) {
+                            if (!msg.isHidden) {
+                                msg.isHidden = true;
+                                historyModified = true;
+                            }
                         }
-                        // 未来在这里添加对素材的查找
-                        return null;
+                    });
+                    if (historyModified) {
+                        await saveChats();
+                        renderMessages();
+                    }
+
+                    // 【递归加载所有关联内容】
+                    const getAssociatedContent = (id, type, visitedIds = new Set()) => {
+                        const uniqueId = `${type}_${id}`;
+                        if (visitedIds.has(uniqueId)) return { before: '', after: '' };
+                        visitedIds.add(uniqueId);
+                        let item;
+                        let result = { before: '', after: '' };
+                        const findItemInAnyAssetList = (itemId) => {
+                            if (presets.offlines) {
+                                const offlineItem = presets.offlines.find(p => p.id === itemId);
+                                if (offlineItem) return { item: offlineItem, type: 'offline' };
+                            }
+                            return null;
+                        };
+                        if (type === 'role') {
+                            item = presets.roles.find(p => p.id === id);
+                            if (!item) return result;
+                            result.after += `\n\n--- 角色书: ${item.name} ---\n${item.content}`;
+                            if (item.associations && item.associations.length > 0) {
+                                item.associations.forEach(assocId => {
+                                    const found = findItemInAnyAssetList(assocId);
+                                    if (found) {
+                                        const nestedContent = getAssociatedContent(found.item.id, found.type, visitedIds);
+                                        result.before += nestedContent.before;
+                                        result.after += nestedContent.after;
+                                    }
+                                });
+                            }
+                        } else if (type === 'offline') {
+                            item = presets.offlines.find(p => p.id === id);
+                            if (!item || !item.enabled) return result;
+                            const presetString = `\n\n--- 预设 (${item.role}): ${item.name} ---\n${item.prompt}`;
+                            if (item.position === 'before') {
+                                result.before += presetString;
+                            } else {
+                                result.after += presetString;
+                            }
+                        }
+                        return result;
                     };
 
-                    if (type === 'role') {
-                        item = presets.roles.find(p => p.id === id);
-                        if (!item) return result;
-
-                        result.after += `\n\n--- 角色书: ${item.name} ---\n${item.content}`;
-
-                        if (item.associations && item.associations.length > 0) {
-                            item.associations.forEach(assocId => {
-                                const found = findItemInAnyAssetList(assocId);
-                                if (found) {
-                                    const nestedContent = getAssociatedContent(found.item.id, found.type, visitedIds);
-                                    result.before += nestedContent.before;
-                                    result.after += nestedContent.after;
-                                }
-                            });
-                        }
-                    } else if (type === 'offline') {
-                        item = presets.offlines.find(p => p.id === id);
-                        if (!item || !item.enabled) return result;
-
-                        const presetString = `\n\n--- 预设 (${item.role}): ${item.name} ---\n${item.prompt}`;
-                        if (item.position === 'before') {
-                            result.before += presetString;
-                        } else {
-                            result.after += presetString;
-                        }
+                    // 【动态构建“超级指令”】
+                    const now = new Date();
+                    const currentTimeString = now.toLocaleString('zh-CN', { hour12: false, dateStyle: 'full', timeStyle: 'short' });
+                    let timeContextBlock = `\n# 当前情景感知:\n- **当前时间**: ${currentTimeString}`;
+                    const lastMessage = chat.history.slice().reverse().find(m => !m.isHidden);
+                    if (lastMessage) {
+                        const timeDiffMinutes = (now.getTime() - lastMessage.timestamp) / (1000 * 60);
+                        let timeDescription = '';
+                        if (timeDiffMinutes < 1) { timeDescription = '你们的对话刚刚还在继续。'; }
+                        else if (timeDiffMinutes < 60) { timeDescription = `你们在${Math.round(timeDiffMinutes)}分钟前聊过。`; }
+                        else if (timeDiffMinutes < 1440) { timeDescription = `你们在${Math.round(timeDiffMinutes / 60)}小时前聊过。`; }
+                        else { timeDescription = `你们已经有${Math.round(timeDiffMinutes / 1440)}天没有联系了。`; }
+                        timeContextBlock += `\n- **对话状态**: ${timeDescription}`;
+                    } else {
+                        timeContextBlock += `\n- **对话状态**: 这是你们的第一次对话。`;
                     }
-                    // 未来在这里添加对 'writingStyle' 和 'socialAsset' 类型的处理
-
-                    return result;
-                };
-                // --- 3. 动态构建“超级指令” (System Prompt) ---
-
-                // 【【【魔法剧本 V2.0 最终版】】】
-                const now = new Date();
-                const currentTimeString = now.toLocaleString('zh-CN', { hour12: false, dateStyle: 'full', timeStyle: 'short' });
-                let timeContextBlock = `\n# 当前情景感知:\n- **当前时间**: ${currentTimeString}`;
-
-                const lastMessage = chat.history.slice().reverse().find(m => !m.isHidden);
-                if (lastMessage) {
-                    const timeDiffMinutes = (now.getTime() - lastMessage.timestamp) / (1000 * 60);
-                    let timeDescription = '';
-                    if (timeDiffMinutes < 1) { timeDescription = '你们的对话刚刚还在继续。'; }
-                    else if (timeDiffMinutes < 60) { timeDescription = `你们在${Math.round(timeDiffMinutes)}分钟前聊过。`; }
-                    else if (timeDiffMinutes < 1440) { timeDescription = `你们在${Math.round(timeDiffMinutes / 60)}小时前聊过。`; }
-                    else { timeDescription = `你们已经有${Math.round(timeDiffMinutes / 1440)}天没有联系了。`; }
-                    timeContextBlock += `\n- **对话状态**: ${timeDescription}`;
-                } else {
-                    timeContextBlock += `\n- **对话状态**: 这是你们的第一次对话。`;
-                }
-
-                let systemPrompt = `你现在正在扮演一个名为“${chat.settings.aiName || chat.name}”的真实人类。你必须完全沉浸在角色中，忘掉你是一个AI模型。
+                    let systemPrompt = `你现在正在扮演一个名为“${chat.settings.aiName || chat.name}”的真实人类。你必须完全沉浸在角色中，忘掉你是一个AI模型。
 
 # 核心规则 (这是最高指令，必须严格遵守):
 1.  **【【【身份铁律】】】**: 你是“${chat.settings.aiName || chat.name}”，一个活生生的人。严禁以任何形式提及你是AI、模型、程序或语言模型。
@@ -12413,233 +12398,168 @@
 *   **回应情侣邀请**: \`{"type": "couple_request_response", "decision": "accept" or "reject"}\`
 *   **解除情侣关系**: \`{"type": "end_relationship"}\`
 `;
-
-                // --- 【【【核心重构】】】分阶段注入角色设定与世界观 ---
-                let associatedContents = { before: '', after: '' };
-                if (chat.settings.aiAssociations && chat.settings.aiAssociations.length > 0) {
-                    chat.settings.aiAssociations.forEach(presetId => {
-                        const contentParts = getAssociatedContent(presetId, 'role');
-                        associatedContents.before += contentParts.before;
-                        associatedContents.after += contentParts.after;
-                    });
-                }
-
-                // 1. 注入“定义之前”的预设
-                if (associatedContents.before) {
-                    systemPrompt += `\n# 背景与前置设定 (必须遵守):\n${associatedContents.before}`;
-                }
-
-                // 2. 注入核心角色设定
-                if (chat.settings.aiPersona) systemPrompt += `\n# 你的角色设定 (你的核心性格与记忆):\n${chat.settings.aiPersona}`;
-                if (chat.settings.aiRelationship) systemPrompt += `\n# 你与用户的关系:\n${chat.settings.aiRelationship}`;
-                if (chat.settings.userPersona) systemPrompt += `\n# 用户的角色设定 (和你聊天的人是...):\n${chat.settings.userPersona}`;
-                if (chat.settings.userSupplementaryInfo) systemPrompt += `\n# 关于你们的补充信息/共同回忆:\n${chat.settings.userSupplementaryInfo}`;
-
-                // 3. 注入“定义之后”的预设和角色书内容
-                if (associatedContents.after) {
-                    systemPrompt += `\n# 补充世界观与角色书细节 (必须遵守):\n${associatedContents.after}`;
-                }
-
-                // --- 注入表情包库 (带有严格限制) ---
-                let stickerPrompt = '\n# 你的表情包库 (【【【铁律】】】你只能从下面的列表中选择确切的表情名，严禁捏造任何不存在的表情!):\n';
-                let hasStickers = false;
-                if (chat.settings.stickerPacks && chat.settings.stickerPacks.length > 0) {
-                    chat.settings.stickerPacks.forEach(pack => {
-                        if (pack.enabled && pack.stickers && pack.stickers.length > 0) {
-                            hasStickers = true;
-                            const stickerNames = pack.stickers.map(s => `"${s.name}"`).join(', ');
-                            stickerPrompt += `- **${pack.name}包**: [${stickerNames}]\n`;
-                        }
-                    });
-                }
-                if (hasStickers) {
-                    systemPrompt += stickerPrompt;
-                } else {
-                    systemPrompt += '\n# 你的表情包库: (你目前没有任何可用的表情包)\n';
-                }
-
-                // --- 注入情景与禁词 ---
-                systemPrompt += timeContextBlock;
-
-                const forbiddenWords = presets.forbiddenWords;
-                if (forbiddenWords && forbiddenWords.content && (forbiddenWords.position === 'all' || forbiddenWords.position === 'online')) {
-                    systemPrompt += `\n# 禁词列表 (【【【铁律】】】你的任何回复都绝对不能包含以下列表中的任何词汇):\n${forbiddenWords.content}`;
-                }
-
-                // 【【【核心修复：增加“防模仿”指令】】】
-                systemPrompt += `\n# 【【【重要提醒】】】\n接下来的对话历史中，每句话前面的 \`发送者 (Timestamp: ...):\` 格式只是为了让你了解上下文，【【【绝对不要】】】在你的回复内容中模仿或包含这种格式！你的回复必须严格遵循“动作指令库”中的JSON格式。`;
-
-                systemPrompt += "\n现在，请根据以上所有剧本和规则，结合下面的对话历史，开始你的表演。";
-
-                // --- 4. 准备结构化的聊天记录 (上下文) ---
-                const maxMemory = chat.settings.maxMemory || 10;
-                const historySlice = chat.history.slice(-maxMemory);
-
-                // 【【【核心修复：结构化聊天记录】】】
-                const messagesForApi = [
-                    { role: "system", content: systemPrompt },
-                    ...historySlice.map(msg => {
-                        if (msg.isHidden) return null; // 过滤掉隐藏消息
-
-                        const sender = msg.role === 'user' ? (chat.settings.userName || '用户') : (chat.settings.aiName || chat.name);
-                        let contentText = '';
-
-                        if (msg.type === 'sticker' && msg.meaning) {
-                            contentText = `[发送了一个表情，意思是：'${msg.meaning}']`;
-                        } else if (msg.type === 'couple_status') {
-                            // 将状态卡片也转化为AI能理解的文本
-                            // (此处可以根据需要做得更详细)
-                            contentText = `[系统消息：发生了一个关于情侣空间的事件]`;
-                        } else if (typeof msg.content === 'string') {
-                            contentText = msg.content;
-                        }
-
-                        const formattedContent = `${sender} (Timestamp: ${msg.timestamp}): ${contentText}`;
-
-                        return { role: msg.role === 'user' ? 'user' : 'assistant', content: formattedContent };
-                    }).filter(Boolean) // 过滤掉 null
-                ];
-
-                // --- 5. 最终组合并发送API请求 ---
-                try {
-                    const response = await fetch(`${baseUrl}/chat/completions`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${apiKey}`
-                        },
-                        body: JSON.stringify({
-                            model: modelName,
-                            messages: messagesForApi,
-                        })
-                    });
-
-                    // --- 【核心修复开始】---
-                    const responseText = await response.text(); // 步骤1：先获取返回的文本内容
-
-                    if (!response.ok) {
-                        // 如果HTTP状态码不正常 (比如 404, 500)
-                        let errorMsg = `HTTP error! status: ${response.status}`;
-                        try {
-                            // 尝试解析这个文本，看看是不是API返回的JSON错误信息
-                            const errorData = JSON.parse(responseText);
-                            errorMsg = errorData.error.message || errorMsg;
-                        } catch (e) {
-                            // 如果解析失败，说明返回的可能就是HTML错误页，直接把HTML片段显示出来帮助排查
-                            errorMsg += ` - Response: ${responseText.substring(0, 100)}...`;
-                        }
-                        throw new Error(errorMsg);
+                    let associatedContents = { before: '', after: '' };
+                    if (chat.settings.aiAssociations && chat.settings.aiAssociations.length > 0) {
+                        chat.settings.aiAssociations.forEach(presetId => {
+                            const contentParts = getAssociatedContent(presetId, 'role');
+                            associatedContents.before += contentParts.before;
+                            associatedContents.after += contentParts.after;
+                        });
                     }
-
-                    let data;
-                    try {
-                        // 步骤2：在确认请求成功后，再尝试解析JSON
-                        data = JSON.parse(responseText);
-                    } catch (e) {
-                        // 步骤3：如果解析失败，就抛出一个更明确的错误
-                        console.error("收到的回复不是有效的JSON格式:", responseText);
-                        throw new Error("收到的回复不是有效的JSON格式。请检查浏览器控制台以获取详细信息。这通常由网络问题或浏览器安全策略引起。");
+                    if (associatedContents.before) {
+                        systemPrompt += `\n# 背景与前置设定 (必须遵守):\n${associatedContents.before}`;
                     }
-                    // --- 【核心修复结束】---
+                    if (chat.settings.aiPersona) systemPrompt += `\n# 你的角色设定 (你的核心性格与记忆):\n${chat.settings.aiPersona}`;
+                    if (chat.settings.aiRelationship) systemPrompt += `\n# 你与用户的关系:\n${chat.settings.aiRelationship}`;
+                    if (chat.settings.userPersona) systemPrompt += `\n# 用户的角色设定 (和你聊天的人是...):\n${chat.settings.userPersona}`;
+                    if (chat.settings.userSupplementaryInfo) systemPrompt += `\n# 关于你们的补充信息/共同回忆:\n${chat.settings.userSupplementaryInfo}`;
+                    if (associatedContents.after) {
+                        systemPrompt += `\n# 补充世界观与角色书细节 (必须遵守):\n${associatedContents.after}`;
+                    }
+                    let stickerPrompt = '\n# 你的表情包库 (【【【铁律】】】你只能从下面的列表中选择确切的表情名，严禁捏造任何不存在的表情!):\n';
+                    let hasStickers = false;
+                    if (chat.settings.stickerPacks && chat.settings.stickerPacks.length > 0) {
+                        chat.settings.stickerPacks.forEach(pack => {
+                            if (pack.enabled && pack.stickers && pack.stickers.length > 0) {
+                                hasStickers = true;
+                                const stickerNames = pack.stickers.map(s => `"${s.name}"`).join(', ');
+                                stickerPrompt += `- **${pack.name}包**: [${stickerNames}]\n`;
+                            }
+                        });
+                    }
+                    if (hasStickers) {
+                        systemPrompt += stickerPrompt;
+                    } else {
+                        systemPrompt += '\n# 你的表情包库: (你目前没有任何可用的表情包)\n';
+                    }
+                    systemPrompt += timeContextBlock;
+                    const forbiddenWords = presets.forbiddenWords;
+                    if (forbiddenWords && forbiddenWords.content && (forbiddenWords.position === 'all' || forbiddenWords.position === 'online')) {
+                        systemPrompt += `\n# 禁词列表 (【【【铁律】】】你的任何回复都绝对不能包含以下列表中的任何词汇):\n${forbiddenWords.content}`;
+                    }
+                    systemPrompt += `\n# 【【【重要提醒】】】\n接下来的对话历史中，每句话前面的 \`发送者 (Timestamp: ...):\` 格式只是为了让你了解上下文，【【【绝对不要】】】在你的回复内容中模仿或包含这种格式！你的回复必须严格遵循“动作指令库”中的JSON格式。`;
+                    systemPrompt += "\n现在，请根据以上所有剧本和规则，结合下面的对话历史，开始你的表演。";
 
-                    const aiReplyString = data.choices[0].message.content;
-                    const replyActions = parseAiJsonResponse(aiReplyString);
+                    // 【准备结构化的聊天记录】
+                    const maxMemory = chat.settings.maxMemory || 10;
+                    const historySlice = chat.history.slice(-maxMemory);
+                    const messagesForApi = [
+                        { role: "system", content: systemPrompt },
+                        ...historySlice.map(msg => {
+                            if (msg.isHidden) return null;
+                            const sender = msg.role === 'user' ? (chat.settings.userName || '用户') : (chat.settings.aiName || chat.name);
+                            let contentText = '';
+                            if (msg.type === 'sticker' && msg.meaning) {
+                                contentText = `[发送了一个表情，意思是：'${msg.meaning}']`;
+                            } else if (msg.type === 'couple_status') {
+                                contentText = `[系统消息：发生了一个关于情侣空间的事件]`;
+                            } else if (typeof msg.content === 'string') {
+                                contentText = msg.content;
+                            }
+                            const formattedContent = `${sender} (Timestamp: ${msg.timestamp}): ${contentText}`;
+                            return { role: msg.role === 'user' ? 'user' : 'assistant', content: formattedContent };
+                        }).filter(Boolean)
+                    ];
 
-                    for (const action of replyActions) {
-                        // 【【【核心修改】】】 这里我们用回请求开始前记下的 originalChatId 来找到正确的聊天对象
-                        const currentChat = chats.find(c => c.id === originalChatId);
-                        if (!currentChat) continue;
+                    // 【【【改造点 3：检查开关和权限，决定任务派发方式】】】
+                    // 检查Service Worker是否准备就绪，后台通知开关是否打开，以及用户是否已授予权限
+                    if (navigator.serviceWorker.controller && chat.settings.backgroundNotify && Notification.permission === 'granted') {
 
-                        // 【【【核心修改】】】 使用“追踪器”判断是否需要增加未读数
-                        // 如果当前显示的聊天ID不是这次AI回复的聊天ID，说明用户已经退出了，那就增加未读数
-                        if (currentlyVisibleChatId !== originalChatId) {
-                            currentChat.unreadCount = (currentChat.unreadCount || 0) + 1;
-                        }
-
-                        const aiMessageBase = {
-                            id: 'msg_' + Date.now() + Math.random(),
-                            role: 'assistant',
-                            timestamp: Date.now()
+                        // 条件满足，将任务外包给 Service Worker (门房)
+                        const payload = {
+                            chatId: activeChatId,
+                            apiSettings: state.apiSettings,
+                            messagesForApi: messagesForApi,
+                            isPageVisible: !document.hidden // 告诉门房当前页面是否可见
                         };
 
-                        let messageToAppend = null;
+                        navigator.serviceWorker.controller.postMessage({
+                            type: 'FETCH_AI_REPLY',
+                            payload: payload
+                        });
 
-                        switch (action.type) {
-                            case 'couple_request':
-                                messageToAppend = { ...aiMessageBase, type: 'couple_status', statusType: 'ai-sends-invite', isActionable: true };
-                                break;
-                            case 'couple_request_response':
-                                const originalInvite = currentChat.history.find(msg => msg.statusType === 'user-sends-invite' && msg.isActionable);
-                                if (originalInvite) { originalInvite.isActionable = false; }
-                                const responseStatus = action.decision === 'accept' ? 'ai-accepts-invite' : 'ai-rejects-invite';
-                                messageToAppend = { ...aiMessageBase, type: 'couple_status', statusType: responseStatus, isActionable: false };
-
-                                if (action.decision === 'accept') {
-                                    const existingPartnerId = coupleSpaceSettings.partnerChatId;
-                                    if (existingPartnerId && existingPartnerId !== currentChat.id) {
-                                        const oldChat = chats.find(c => c.id === existingPartnerId);
-                                        if (oldChat) {
-                                            oldChat.history.push({
-                                                id: 'msg_' + Date.now() + Math.random(),
-                                                role: 'system',
-                                                type: 'couple_status',
-                                                statusType: 'system-ends-relationship-due-to-new',
-                                                isActionable: false,
-                                                timestamp: Date.now()
-                                            });
-                                        }
-                                    }
-
-                                    coupleSpaceSettings.partnerChatId = currentChat.id;
-                                    coupleSpaceSettings.bindingDate = Date.now();
-                                    saveCoupleSpaceSettings();
-                                    updateCoupleSpaceUI();
-                                }
-                                break;
-                            case 'end_relationship':
-                                // 这是AI主动解除关系
-                                messageToAppend = { ...aiMessageBase, type: 'couple_status', statusType: 'ai-ends-relationship', isActionable: false };
-                                // 同时处理后台数据
-                                if (coupleSpaceSettings.partnerChatId === currentChat.id) {
-                                    coupleSpaceSettings.partnerChatId = null;
-                                    coupleSpaceSettings.bindingDate = null;
-                                    if (coupleStatusMessages[currentChat.id]) {
-                                        delete coupleStatusMessages[currentChat.id];
-                                    }
-                                    saveCoupleSpaceSettings();
-                                    updateCoupleSpaceUI();
-                                }
-                                break;
-                            default:
-                                messageToAppend = { ...aiMessageBase, content: action.content || action.url, type: action.type, meaning: action.meaning };
-                                break;
+                    } else {
+                        // 如果条件不满足（例如用户没开开关），则执行旧的、仅限前台的fetch逻辑
+                        // 注意：这里我们把旧的fetch逻辑直接放进来，保证了功能的兼容性
+                        const response = await fetch(`${baseUrl}/chat/completions`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                            body: JSON.stringify({ model: modelName, messages: messagesForApi })
+                        });
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error.message);
                         }
-
-                        if (messageToAppend) {
-                            currentChat.history.push(messageToAppend);
-                            // 【【【核心修改】】】 如果用户还在此页面，则实时追加消息
-                            if (currentlyVisibleChatId === originalChatId) {
-                                appendMessage(messageToAppend, messageContainer, true);
+                        const data = await response.json();
+                        const aiReplyString = data.choices[0].message.content;
+                        const replyActions = parseAiJsonResponse(aiReplyString);
+                        // ... (处理AI回复的循环，这部分逻辑与旧代码完全相同)
+                        for (const action of replyActions) {
+                            const currentChat = chats.find(c => c.id === activeChatId);
+                            if (!currentChat) continue;
+                            if (currentlyVisibleChatId !== activeChatId) {
+                                currentChat.unreadCount = (currentChat.unreadCount || 0) + 1;
                             }
+                            const aiMessageBase = { id: 'msg_' + Date.now() + Math.random(), role: 'assistant', timestamp: Date.now() };
+                            let messageToAppend = null;
+                            switch (action.type) {
+                                case 'couple_request': messageToAppend = { ...aiMessageBase, type: 'couple_status', statusType: 'ai-sends-invite', isActionable: true }; break;
+                                case 'couple_request_response':
+                                    const originalInvite = currentChat.history.find(msg => msg.statusType === 'user-sends-invite' && msg.isActionable);
+                                    if (originalInvite) { originalInvite.isActionable = false; }
+                                    const responseStatus = action.decision === 'accept' ? 'ai-accepts-invite' : 'ai-rejects-invite';
+                                    messageToAppend = { ...aiMessageBase, type: 'couple_status', statusType: responseStatus, isActionable: false };
+                                    if (action.decision === 'accept') {
+                                        const existingPartnerId = coupleSpaceSettings.partnerChatId;
+                                        if (existingPartnerId && existingPartnerId !== currentChat.id) {
+                                            const oldChat = chats.find(c => c.id === existingPartnerId);
+                                            if (oldChat) {
+                                                oldChat.history.push({ id: 'msg_' + Date.now() + Math.random(), role: 'system', type: 'couple_status', statusType: 'system-ends-relationship-due-to-new', isActionable: false, timestamp: Date.now() });
+                                            }
+                                        }
+                                        coupleSpaceSettings.partnerChatId = currentChat.id;
+                                        coupleSpaceSettings.bindingDate = Date.now();
+                                        saveCoupleSpaceSettings();
+                                        updateCoupleSpaceUI();
+                                    }
+                                    break;
+                                case 'end_relationship':
+                                    messageToAppend = { ...aiMessageBase, type: 'couple_status', statusType: 'ai-ends-relationship', isActionable: false };
+                                    if (coupleSpaceSettings.partnerChatId === currentChat.id) {
+                                        coupleSpaceSettings.partnerChatId = null;
+                                        coupleSpaceSettings.bindingDate = null;
+                                        if (coupleStatusMessages[currentChat.id]) {
+                                            delete coupleStatusMessages[currentChat.id];
+                                        }
+                                        saveCoupleSpaceSettings();
+                                        updateCoupleSpaceUI();
+                                    }
+                                    break;
+                                default: messageToAppend = { ...aiMessageBase, content: action.content || action.url, type: action.type, meaning: action.name }; break;
+                            }
+                            if (messageToAppend) {
+                                currentChat.history.push(messageToAppend);
+                                if (currentlyVisibleChatId === activeChatId) {
+                                    appendMessage(messageToAppend, messageContainer, true);
+                                }
+                            }
+                            await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
                         }
-
-                        await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
+                        saveChats();
+                        renderContactList();
+                        updateTotalUnreadBadge();
                     }
-                    // 【【【核心修改】】】 循环结束后，统一保存并刷新列表和总数
-                    saveChats();
-                    renderContactList();
-                    updateTotalUnreadBadge();
 
                 } catch (error) {
-                    console.error('API 调用或解析出错:', error);
+                    console.error('API 调用或任务派发失败:', error);
                     alert(`获取回复失败：${error.message}`);
-                    const errorMessage = { role: 'assistant', content: `[错误: ${error.message}]`, timestamp: Date.now(), id: 'error_' + Date.now() }; // 添加了ID
-                    const chat = chats.find(c => c.id === activeChatId);
+                    const errorMessage = { role: 'assistant', content: `[错误: ${error.message}]`, timestamp: Date.now(), id: 'error_' + Date.now() };
                     if (chat) {
                         chat.history.push(errorMessage);
                         appendMessage(errorMessage);
                     }
                 } finally {
+                    // 【【【改造点 4：无论如何都恢复按钮】】】
                     generateBtn.innerHTML = '';
                     generateBtn.appendChild(genBtnIcon);
                     generateBtn.disabled = false;
@@ -13285,6 +13205,9 @@
                 // 【V4.0 新增】获取置顶开关元素
                 const pinChatToggle = document.getElementById('pin-chat-toggle');
 
+                // 【【【全新】】】获取后台弹窗开关元素
+                const notifyToggle = document.getElementById('background-notify-toggle');
+
                 const aiSettingsNameDisplay = document.getElementById('ai-settings-name-display');
                 const userSettingsNameDisplay = document.getElementById('user-settings-name-display');
 
@@ -13296,6 +13219,10 @@
                 // 【V4.0 新增】确保 isPinned 属性存在，并设置开关状态
                 chat.isPinned = typeof chat.isPinned === 'boolean' ? chat.isPinned : false;
                 pinChatToggle.checked = chat.isPinned;
+
+                // 【【【全新】】】确保后台通知设置存在，并设置开关状态
+                chat.settings.backgroundNotify = typeof chat.settings.backgroundNotify === 'boolean' ? chat.settings.backgroundNotify : false;
+                notifyToggle.checked = chat.settings.backgroundNotify;
 
                 chat.settings.showAvatars = typeof chat.settings.showAvatars === 'boolean' ? chat.settings.showAvatars : true;
                 showAvatarsToggle.checked = chat.settings.showAvatars;
@@ -13317,6 +13244,31 @@
                 // 【V4.0 新增】获取并保存置顶状态
                 const pinChatToggle = document.getElementById('pin-chat-toggle');
                 chat.isPinned = pinChatToggle.checked;
+
+                // 【【【全新】】】获取并保存后台通知开关状态
+                const notifyToggle = document.getElementById('background-notify-toggle');
+                chat.settings.backgroundNotify = notifyToggle.checked;
+
+                // 【【【全新】】】如果用户是想打开通知，且我们还没有权限，就现在申请
+                if (notifyToggle.checked && Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            console.log('通知权限已获取！');
+                        } else {
+                            console.log('用户拒绝了通知权限。');
+                            // 用户拒绝了，就把开关再关掉
+                            notifyToggle.checked = false;
+                            chat.settings.backgroundNotify = false;
+                            saveChats(); // 立即保存这个“关闭”状态
+                        }
+                    });
+                } else if (notifyToggle.checked && Notification.permission === 'denied') {
+                    // 如果权限已经被永久拒绝了，提示用户
+                    alert('通知权限已被浏览器禁用。请在浏览器设置中手动开启。');
+                    notifyToggle.checked = false;
+                    chat.settings.backgroundNotify = false;
+                }
+
 
                 chat.settings.showAvatars = showAvatarsToggle.checked;
                 chat.settings.avatarRadius = avatarRadiusInput.value.trim() || '28';
@@ -16079,6 +16031,16 @@
 
             // --- 初始化 (V1.92 最终性能优化版) ---
             async function initializeApp() {
+                // 【【【全新】】】第一件事：注册 Service Worker (雇佣门房)
+                if ('serviceWorker' in navigator) {
+                    try {
+                        await navigator.serviceWorker.register('service-worker.js');
+                        console.log('Service Worker 注册成功!');
+                    } catch (error) {
+                        console.error('Service Worker 注册失败:', error);
+                    }
+                }
+
                 // 【第一步：缓存】在所有操作开始前，一次性查找并缓存所有图标元素及其默认SVG
                 const iconConfig = [
                     { key: 'chat', elements: document.querySelectorAll('.new-app-icon[data-target="chat-list-screen"], .app-icon-preview[data-icon-key="chat"]') },
@@ -16149,6 +16111,78 @@
                 applyDesktopSettings();        // 这个函数会调用 applyDesktopIconSettings
                 updateTotalUnreadBadge(); // 【【【核心新增】】】 初始化时就计算并显示总未读数
                 renderStatusFeed(); // 【【【全新】】】 初始化时渲染动态列表
+
+                // 【【【全新：第五步 - 建立内部广播接收器】】】
+                // 创建一个广播频道，名字必须和 service-worker.js 里的一致
+                const channel = new BroadcastChannel('kiki-chat-updates');
+                // 监听这个频道的消息
+                channel.onmessage = (event) => {
+                    const { type, chatId, replyActions } = event.data;
+
+                    // 只处理我们关心的新消息事件
+                    if (type === 'NEW_MESSAGES') {
+                        const chat = chats.find(c => c.id === chatId);
+                        if (chat) {
+                            // 循环处理AI回复的每一个动作
+                            replyActions.forEach(action => {
+                                const aiMessageBase = { id: 'msg_' + Date.now() + Math.random(), role: 'assistant', timestamp: Date.now() };
+                                let messageToAppend = null;
+                                // ... (这里的 switch-case 逻辑和 handleGenerateReply 中的完全一样，用于解析AI动作)
+                                switch (action.type) {
+                                    case 'couple_request': messageToAppend = { ...aiMessageBase, type: 'couple_status', statusType: 'ai-sends-invite', isActionable: true }; break;
+                                    case 'couple_request_response':
+                                        const originalInvite = chat.history.find(msg => msg.statusType === 'user-sends-invite' && msg.isActionable);
+                                        if (originalInvite) { originalInvite.isActionable = false; }
+                                        const responseStatus = action.decision === 'accept' ? 'ai-accepts-invite' : 'ai-rejects-invite';
+                                        messageToAppend = { ...aiMessageBase, type: 'couple_status', statusType: responseStatus, isActionable: false };
+                                        if (action.decision === 'accept') {
+                                            const existingPartnerId = coupleSpaceSettings.partnerChatId;
+                                            if (existingPartnerId && existingPartnerId !== chat.id) {
+                                                const oldChat = chats.find(c => c.id === existingPartnerId);
+                                                if (oldChat) {
+                                                    oldChat.history.push({ id: 'msg_' + Date.now() + Math.random(), role: 'system', type: 'couple_status', statusType: 'system-ends-relationship-due-to-new', isActionable: false, timestamp: Date.now() });
+                                                }
+                                            }
+                                            coupleSpaceSettings.partnerChatId = chat.id;
+                                            coupleSpaceSettings.bindingDate = Date.now();
+                                            saveCoupleSpaceSettings();
+                                            updateCoupleSpaceUI();
+                                        }
+                                        break;
+                                    case 'end_relationship':
+                                        messageToAppend = { ...aiMessageBase, type: 'couple_status', statusType: 'ai-ends-relationship', isActionable: false };
+                                        if (coupleSpaceSettings.partnerChatId === chat.id) {
+                                            coupleSpaceSettings.partnerChatId = null;
+                                            coupleSpaceSettings.bindingDate = null;
+                                            if (coupleStatusMessages[chat.id]) {
+                                                delete coupleStatusMessages[chat.id];
+                                            }
+                                            saveCoupleSpaceSettings();
+                                            updateCoupleSpaceUI();
+                                        }
+                                        break;
+                                    default: messageToAppend = { ...aiMessageBase, content: action.content || action.url, type: action.type, meaning: action.name }; break;
+                                }
+
+                                if (messageToAppend) {
+                                    chat.history.push(messageToAppend);
+                                    // 如果当前正在查看的就是这个聊天，就实时追加消息
+                                    if (currentlyVisibleChatId === chatId) {
+                                        appendMessage(messageToAppend, messageContainer, true);
+                                    }
+                                }
+                            });
+                            // 统一保存和刷新
+                            saveChats();
+                            renderContactList();
+                        }
+                    } else if (type === 'NOTIFICATION_CLICKED') {
+                        // 如果是通知点击事件，就直接打开对应的聊天
+                        if (event.data.chatId) {
+                            openChat(event.data.chatId);
+                        }
+                    }
+                };
 
                 // 【第四步：启动】所有界面都渲染完毕，最后再显示屏幕和启动定时器
                 updateTime();
