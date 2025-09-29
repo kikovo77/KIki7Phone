@@ -15117,6 +15117,18 @@
             avatarRadiusInput.addEventListener('blur', saveCurrentChatSettings);
             fontSizeInput.addEventListener('blur', saveCurrentChatSettings);
 
+            // 【【【核心修正：为新开关接上“电线”】】】
+            // 定位到聊天设置页面中的 pinChatToggle 和 background-notify-toggle
+            const pinChatToggle = document.getElementById('pin-chat-toggle');
+            const notifyToggle = document.getElementById('background-notify-toggle');
+
+            if (pinChatToggle) {
+                pinChatToggle.addEventListener('change', saveCurrentChatSettings);
+            }
+            if (notifyToggle) {
+                notifyToggle.addEventListener('change', saveCurrentChatSettings);
+            }
+
 
             avatarUploadInput.addEventListener('change', handleAvatarUpload);
 
