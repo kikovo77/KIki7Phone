@@ -5617,7 +5617,9 @@
             overflow: hidden;
             /* 核心：强制隐藏外部滚动条 */
             overscroll-behavior-y: none;
-            /* 【【【新增】】】 核心修复：禁止垂直方向的“橡皮筋”滚动效果 */
+            /* 禁止垂直方向的“橡皮筋”滚动效果 */
+            touch-action: none;
+            /* 【【【新增强化】】】完全禁止浏览器对触摸手势的默认行为（如滚动、缩放等） */
         }
 
         body.phone-frame-visible {
@@ -10651,12 +10653,23 @@
             // --- 【【【新增】】】为桌面添加下拉手势监听 ---
 
             // --- 封装下拉逻辑以便复用 ---
-            const startPullDown = (y) => {
-                // 【【【核心修改】】】 在这里增加一个判断，确保只有在桌面上才能下拉
+            const startPullDown = (event) => {
                 const homeScreen = document.getElementById('home-screen');
-                if (lockScreen.classList.contains('unlocked') && homeScreen.classList.contains('active') && y < 50) {
+                const phoneWrapper = document.getElementById('phone-wrapper');
+                const rect = phoneWrapper.getBoundingClientRect(); // 获取手机框的实时位置和尺寸
+
+                // 【【【核心逻辑重构】】】
+                // 1. 检查当前是否在桌面
+                // 2. 检查锁屏是否已解锁
+                // 3. 检查手势是否发生在手机框内部
+                // 4. 检查手势是否从手机框的顶部区域（顶部向下50像素）开始
+                if (homeScreen.classList.contains('active') &&
+                    lockScreen.classList.contains('unlocked') &&
+                    event.clientX >= rect.left && event.clientX <= rect.right &&
+                    event.clientY >= rect.top && event.clientY < rect.top + 50) {
+
                     isPullingDown = true;
-                    pullDownStartY = y;
+                    pullDownStartY = event.clientY; // 使用事件的全局Y坐标
                     lockScreen.classList.add('active');
                     lockScreen.classList.remove('unlocked');
                     lockScreen.classList.add('pulling-down');
@@ -10707,27 +10720,26 @@
                 currentPullDownY = 0;
             };
 
-            // --- 【【【核心修改】】】 将事件监听器绑定到 #phone-screen ---
-            const phoneScreenForPullDown = document.getElementById('phone-screen');
+            // --- 【【【核心修改】】】 将事件监听器绑定到全局 window 对象 ---
 
             // --- 触摸事件监听 ---
-            phoneScreenForPullDown.addEventListener('touchstart', (e) => {
-                startPullDown(e.touches[0].clientY);
+            window.addEventListener('touchstart', (e) => {
+                startPullDown(e.touches[0]);
             }, { passive: true });
 
-            phoneScreenForPullDown.addEventListener('touchmove', (e) => {
+            window.addEventListener('touchmove', (e) => {
                 if (isPullingDown) {
                     e.preventDefault();
                     movePullDown(e.touches[0].clientY);
                 }
             }, { passive: false });
 
-            phoneScreenForPullDown.addEventListener('touchend', endPullDown);
-            phoneScreenForPullDown.addEventListener('touchcancel', endPullDown);
+            window.addEventListener('touchend', endPullDown);
+            window.addEventListener('touchcancel', endPullDown);
 
             // --- 鼠标事件监听 ---
-            phoneScreenForPullDown.addEventListener('mousedown', (e) => {
-                if (startPullDown(e.clientY)) { // 如果成功开始下拉
+            window.addEventListener('mousedown', (e) => {
+                if (startPullDown(e)) { // 直接传递鼠标事件对象
                     const handleMouseMove = (ev) => movePullDown(ev.clientY);
                     const handleMouseUp = () => {
                         endPullDown();
