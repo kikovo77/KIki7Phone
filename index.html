@@ -6184,7 +6184,7 @@
         }
 
 
-        /* --- 更换壁纸弹窗 (复用样式) --- */
+        /* --- 更换桌面壁纸弹窗 (复用样式) --- */
         .background-preview-clone {
             width: 100%;
             padding-top: 56.25%;
@@ -9172,10 +9172,10 @@
                     <div style="width: 44px;"></div>
                 </div>
                 <div id="appearance-settings-container" class="form-container">
-                    <!-- 板块1: 更换壁纸 -->
+                    <!-- 板块1: 更换桌面壁纸 -->
                     <div class="settings-plate">
                         <div class="settings-item" id="open-desktop-wallpaper-modal-btn">
-                            <span class="settings-item-title">更换壁纸</span>
+                            <span class="settings-item-title">更换桌面壁纸</span>
                             <div class="settings-arrow">
                                 <svg t="1758194831460" class="icon" viewBox="0 0 1024 1024" version="1.1"
                                     xmlns="http://www.w3.org/2000/svg" p-id="4472" width="16.5" height="16.5">
@@ -14066,7 +14066,7 @@
                 showScreen('app-icon-settings-screen');
             });
 
-            // 在外观设置页面，点击“更换壁纸”
+            // 在外观设置页面，点击“更换桌面壁纸”
             openDesktopWallpaperModalBtn.addEventListener('click', () => {
                 // 打开时，根据当前壁纸状态更新预览
                 if (desktopWallpaper) {
@@ -14079,7 +14079,7 @@
                 desktopWallpaperModal.classList.add('visible');
             });
 
-            // 更换壁纸弹窗内的交互
+            // 更换桌面壁纸弹窗内的交互
             desktopWallpaperPreview.addEventListener('click', () => desktopWallpaperUploadInput.click());
             desktopWallpaperUploadInput.addEventListener('change', handleDesktopWallpaperUpload);
             removeDesktopWallpaperBtn.addEventListener('click', (e) => {
