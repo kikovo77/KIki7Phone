@@ -9938,9 +9938,176 @@
         </div>
     </div>
 
-    <script src="./client.js"></script>
+    <!-- <script src="./client.js"></script>  【【【修改：暂时注释掉旧的引入方式】】】 -->
 
     <script>
+        // 【【【核心修复：在此处统一定义全局后端地址】】】
+        window.BACKEND_URL = 'http://139.9.33.118';
+
+        // ===================================================================
+        // 【【【新增：将 client.js 的内容直接粘贴到这里】】】
+        // ===================================================================
+
+        // client.js - v2.0 - 持久化开关 & 完整的订阅/取消订阅逻辑
+
+        let vapidPublicKey = '';
+        let pushSubscription = null;
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        async function getVapidKey() {
+            if (vapidPublicKey) return;
+            try {
+                // 【【【核心修改：直接使用全局变量】】】
+                const response = await fetch(`${window.BACKEND_URL}/vapid-public-key`);
+                if (!response.ok) throw new Error(`服务器响应错误: ${response.status}`);
+                const key = await response.text();
+                vapidPublicKey = key;
+                console.log('成功获取VAPID公钥。');
+            } catch (error) {
+                console.error('获取VAPID公钥失败:', error);
+                alert(`连接后端服务失败，无法获取推送配置。\n错误: ${error.message}`);
+                throw error;
+            }
+        }
+
+        async function handleNotificationToggle(event) {
+            const toggle = event.target;
+            // 【核心修改】增加一个加载状态，防止用户连续点击
+            toggle.disabled = true;
+            if (toggle.checked) {
+                await subscribeUser().catch(() => { }); // 捕获错误防止程序中断
+            } else {
+                await unsubscribeUser().catch(() => { });
+            }
+            await updateToggleState(); // 根据最终结果更新状态
+            toggle.disabled = false;
+        }
+
+        async function subscribeUser() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                alert('您的浏览器不支持推送通知。');
+                throw new Error('Unsupported browser');
+            }
+
+            try {
+                await getVapidKey();
+                const registration = await navigator.serviceWorker.ready;
+                const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+                const permission = await Notification.requestPermission();
+
+                if (permission !== 'granted') {
+                    console.log('用户拒绝了通知权限');
+                    alert('您已拒绝通知权限。如需开启，请在浏览器设置中手动操作。');
+                    throw new Error('Permission not granted');
+                }
+
+                pushSubscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: applicationServerKey
+                });
+
+                const response = await fetch(`${window.BACKEND_URL}/save-subscription`, {
+                    method: 'POST',
+                    body: JSON.stringify(pushSubscription),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    throw new Error('后端保存订阅信息失败');
+                }
+
+                console.log('用户成功订阅:', JSON.stringify(pushSubscription));
+                localStorage.setItem('notificationsEnabled', 'true');
+                alert('通知已开启！');
+
+            } catch (error) {
+                console.error('订阅推送失败:', error);
+                localStorage.setItem('notificationsEnabled', 'false');
+                // 只有在不是用户主动拒绝的情况下才弹窗
+                if (error.message !== 'Permission not granted') {
+                    alert(`开启通知失败: ${error.message}`);
+                }
+                throw error; // 抛出错误让 handleNotificationToggle 知道失败了
+            }
+        }
+
+        async function unsubscribeUser() {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                pushSubscription = await registration.pushManager.getSubscription();
+
+                if (pushSubscription) {
+                    await fetch(`${window.BACKEND_URL}/remove-subscription`, {
+                        method: 'POST',
+                        body: JSON.stringify({ endpoint: pushSubscription.endpoint }),
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    const unsubscribed = await pushSubscription.unsubscribe();
+                    if (unsubscribed) {
+                        console.log('用户成功取消订阅。');
+                        pushSubscription = null;
+                    }
+                }
+
+                localStorage.setItem('notificationsEnabled', 'false');
+                alert('通知已关闭。');
+
+            } catch (error) {
+                console.error('取消订阅失败:', error);
+                alert('关闭通知失败，请稍后再试。');
+                throw error;
+            }
+        }
+
+        async function updateToggleState() {
+            const enableNotificationsToggle = document.getElementById('enable-notifications-toggle');
+            if (!enableNotificationsToggle) return;
+
+            const userPreference = localStorage.getItem('notificationsEnabled');
+
+            if (userPreference === 'false') {
+                enableNotificationsToggle.checked = false;
+                return;
+            }
+
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.ready;
+                    const subscription = await registration.pushManager.getSubscription();
+                    if (subscription && Notification.permission === 'granted') {
+                        enableNotificationsToggle.checked = true;
+                        pushSubscription = subscription;
+                        localStorage.setItem('notificationsEnabled', 'true');
+                    } else {
+                        enableNotificationsToggle.checked = false;
+                        localStorage.setItem('notificationsEnabled', 'false');
+                    }
+                } catch (error) {
+                    console.error("检查订阅状态时出错:", error);
+                    enableNotificationsToggle.checked = false;
+                }
+            }
+        }
+
+        async function initPushNotifications() {
+            const enableNotificationsToggle = document.getElementById('enable-notifications-toggle');
+            if (enableNotificationsToggle) {
+                enableNotificationsToggle.addEventListener('change', handleNotificationToggle);
+                await updateToggleState();
+            }
+        }
+
         // ===================================================================
         // 【全新 V1.81 修复方案】IndexedDB 数据库帮助函数
         // ===================================================================
@@ -12593,11 +12760,11 @@
                                 }
                             };
 
-                            // 【【【核心修改：在这里也定义后端地址】】】
-                            const BACKEND_URL_FOR_INDEX = 'http://139.9.33.118';
+                            // 【核心修改】不再需要定义局部变量，直接使用全局变量
+                            // const BACKEND_URL_FOR_INDEX = 'http://...';
 
                             // 向我们的后端发送请求
-                            fetch(`${BACKEND_URL_FOR_INDEX}/send-notification`, {
+                            fetch(`${window.BACKEND_URL}/send-notification`, {
                                 method: 'POST',
                                 body: JSON.stringify(payload),
                                 headers: {
