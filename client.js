@@ -1,7 +1,7 @@
 // client.js - v2.0 - 持久化开关 & 完整的订阅/取消订阅逻辑
 
 // 【【【核心修改：在这里填入您云服务器的公网IP地址！】】】
-const BACKEND_URL = 'http://139.9.33.118:3000';
+const BACKEND_URL_FOR_INDEX = 'http://139.9.33.118';
 
 let vapidPublicKey = '';
 let pushSubscription = null;
