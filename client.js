@@ -1,45 +1,55 @@
-// client.js - 推送通知客户端逻辑
+// client.js - v2.0 - 持久化开关 & 完整的订阅/取消订阅逻辑
 
-// 这是一个全局变量，用于存储我们从服务器获取的VAPID公钥
+// 【【【核心修改：在这里填入您云服务器的公网IP地址！】】】
+const BACKEND_URL = 'http://139.9.33.118:3000';
+
 let vapidPublicKey = '';
-// 这是一个全局变量，用于存储用户订阅后的“订阅凭证”
 let pushSubscription = null;
 
-/**
- * 将 VAPID 公钥从 Base64 字符串转换为 Uint8Array 格式，这是 Push API 的要求
- * @param {string} base64String 
- * @returns {Uint8Array}
- */
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-        .replace(/\-/g, '+')
-        .replace(/_/g, '/');
-
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
     const rawData = window.atob(base64);
     const outputArray = new Uint8Array(rawData.length);
-
     for (let i = 0; i < rawData.length; ++i) {
         outputArray[i] = rawData.charCodeAt(i);
     }
     return outputArray;
 }
 
-/**
- * 获取 VAPID 公钥
- */
 async function getVapidKey() {
+    if (vapidPublicKey) return;
     try {
-        const response = await fetch('/vapid-public-key');
+        const response = await fetch(`${BACKEND_URL}/vapid-public-key`);
+        if (!response.ok) throw new Error(`服务器响应错误: ${response.status}`);
         const key = await response.text();
         vapidPublicKey = key;
+        console.log('成功获取VAPID公钥。');
     } catch (error) {
         console.error('获取VAPID公钥失败:', error);
+        alert(`连接后端服务失败，无法获取推送配置。\n错误: ${error.message}`);
+        throw error; // 【新增】抛出错误，中断后续流程
     }
 }
 
 /**
- * 核心函数：订阅推送通知
+ * 核心函数：处理用户点击开关的逻辑
+ */
+async function handleNotificationToggle(event) {
+    const toggle = event.target;
+    if (toggle.checked) {
+        // 用户想要开启通知
+        await subscribeUser();
+    } else {
+        // 用户想要关闭通知
+        await unsubscribeUser();
+    }
+    // 【新增】无论成功与否，都更新开关的最终状态并保存
+    updateToggleState();
+}
+
+/**
+ * 订阅推送
  */
 async function subscribeUser() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -48,44 +58,109 @@ async function subscribeUser() {
     }
 
     try {
-        // 1. 获取已注册的 Service Worker
+        await getVapidKey(); // 确保我们有公钥
         const registration = await navigator.serviceWorker.ready;
+        const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
 
-        // 2. 检查是否已经订阅
-        pushSubscription = await registration.pushManager.getSubscription();
-
-        if (pushSubscription) {
-            console.log('用户已经订阅过了。');
-            // 如果需要，可以在这里处理取消订阅的逻辑
-            return;
+        // 请求权限
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            console.log('用户拒绝了通知权限');
+            alert('您已拒绝通知权限。如需开启，请在浏览器设置中手动操作。');
+            throw new Error('Permission not granted');
         }
 
-        // 3. 如果未订阅，则发起订阅请求
-        const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+        // 发起订阅
         pushSubscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: applicationServerKey
         });
 
-        console.log('用户成功订阅:', JSON.stringify(pushSubscription));
-
-        // 4. 将订阅信息发送到后端保存
-        await fetch('/save-subscription', {
+        // 发送到后端保存
+        const response = await fetch(`${BACKEND_URL}/save-subscription`, {
             method: 'POST',
             body: JSON.stringify(pushSubscription),
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Content-Type': 'application/json' }
         });
 
+        if (!response.ok) {
+            throw new Error('后端保存订阅信息失败');
+        }
+
+        console.log('用户成功订阅:', JSON.stringify(pushSubscription));
+        localStorage.setItem('notificationsEnabled', 'true'); // 【新增】保存状态
         alert('通知已开启！');
 
     } catch (error) {
         console.error('订阅推送失败:', error);
-        if (Notification.permission === 'denied') {
-            alert('您已拒绝通知权限。请在浏览器设置中手动开启。');
-        } else {
-            alert('开启通知失败，请稍后再试。');
+        localStorage.setItem('notificationsEnabled', 'false'); // 【新增】失败时保存为关闭状态
+        alert(`开启通知失败: ${error.message}`);
+    }
+}
+
+/**
+ * 取消订阅推送
+ */
+async function unsubscribeUser() {
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        pushSubscription = await registration.pushManager.getSubscription();
+
+        if (pushSubscription) {
+            // 告诉后端删除这个订阅
+            await fetch(`${BACKEND_URL}/remove-subscription`, {
+                method: 'POST',
+                body: JSON.stringify({ endpoint: pushSubscription.endpoint }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            await pushSubscription.unsubscribe();
+            console.log('用户成功取消订阅。');
+            pushSubscription = null;
+        }
+
+        localStorage.setItem('notificationsEnabled', 'false'); // 【新增】保存状态
+        alert('通知已关闭。');
+
+    } catch (error) {
+        console.error('取消订阅失败:', error);
+        alert('关闭通知失败，请稍后再试。');
+    }
+}
+
+/**
+ * 【新增】根据现有状态更新开关的显示
+ */
+async function updateToggleState() {
+    const enableNotificationsToggle = document.getElementById('enable-notifications-toggle');
+    if (!enableNotificationsToggle) return;
+
+    // 从 localStorage 读取用户意图
+    const userPreference = localStorage.getItem('notificationsEnabled');
+
+    if (userPreference === 'false') {
+        enableNotificationsToggle.checked = false;
+        return;
+    }
+
+    // 如果用户意图是开启（或未设置），则检查实际订阅状态
+    if ('serviceWorker' in navigator) {
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.getSubscription();
+            if (subscription && Notification.permission === 'granted') {
+                enableNotificationsToggle.checked = true;
+                pushSubscription = subscription;
+            } else {
+                enableNotificationsToggle.checked = false;
+                // 如果权限被拒绝了，也记录下来
+                if (Notification.permission === 'denied') {
+                    localStorage.setItem('notificationsEnabled', 'false');
+                }
+            }
+        } catch (error) {
+            console.error("检查订阅状态时出错:", error);
+            enableNotificationsToggle.checked = false;
         }
     }
 }
@@ -95,49 +170,12 @@ async function subscribeUser() {
  * 初始化推送通知功能
  */
 async function initPushNotifications() {
-    // 首先从后端获取VAPID公钥
-    await getVapidKey();
-
     const enableNotificationsToggle = document.getElementById('enable-notifications-toggle');
     if (enableNotificationsToggle) {
-        enableNotificationsToggle.addEventListener('click', async () => {
-            // 检查当前权限状态
-            if (Notification.permission === 'granted') {
-                alert('您已经开启过通知了。');
-                enableNotificationsToggle.checked = true; // 保持开关为开启状态
-                return;
-            }
-            if (Notification.permission === 'denied') {
-                alert('您已屏蔽通知权限，请前往浏览器或系统设置手动开启。');
-                enableNotificationsToggle.checked = false; // 保持关闭
-                return;
-            }
-            // 如果是 default 状态，则请求权限并订阅
-            if (Notification.permission === 'default') {
-                // 请求权限
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    console.log('用户授予了通知权限');
-                    // 权限被授予后，立即执行订阅
-                    await subscribeUser();
-                    enableNotificationsToggle.checked = true;
-                } else {
-                    console.log('用户拒绝了通知权限');
-                    enableNotificationsToggle.checked = false;
-                }
-            }
-        });
+        // 【核心修改】将事件监听器从 'click' 改为 'change'，并且直接绑定我们的总控函数
+        enableNotificationsToggle.addEventListener('change', handleNotificationToggle);
 
-        // 页面加载时检查现有状态，更新开关
-        if ('serviceWorker' in navigator) {
-            const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.getSubscription();
-            if (subscription && Notification.permission === 'granted') {
-                enableNotificationsToggle.checked = true;
-                pushSubscription = subscription; // 更新全局变量
-            } else {
-                enableNotificationsToggle.checked = false;
-            }
-        }
+        // 页面加载时，更新开关状态
+        await updateToggleState();
     }
 }
