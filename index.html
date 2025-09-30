@@ -5616,6 +5616,8 @@
         body.phone-frame-visible {
             overflow: hidden;
             /* 核心：强制隐藏外部滚动条 */
+            overscroll-behavior-y: none;
+            /* 【【【新增】】】 核心修复：禁止垂直方向的“橡皮筋”滚动效果 */
         }
 
         body.phone-frame-visible {
