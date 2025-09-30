@@ -10652,7 +10652,9 @@
 
             // --- 封装下拉逻辑以便复用 ---
             const startPullDown = (y) => {
-                if (lockScreen.classList.contains('unlocked') && y < 50) {
+                // 【【【核心修改】】】 在这里增加一个判断，确保只有在桌面上才能下拉
+                const homeScreen = document.getElementById('home-screen');
+                if (lockScreen.classList.contains('unlocked') && homeScreen.classList.contains('active') && y < 50) {
                     isPullingDown = true;
                     pullDownStartY = y;
                     lockScreen.classList.add('active');
@@ -10705,23 +10707,26 @@
                 currentPullDownY = 0;
             };
 
+            // --- 【【【核心修改】】】 将事件监听器绑定到 #phone-screen ---
+            const phoneScreenForPullDown = document.getElementById('phone-screen');
+
             // --- 触摸事件监听 ---
-            homeScreenForPullDown.addEventListener('touchstart', (e) => {
+            phoneScreenForPullDown.addEventListener('touchstart', (e) => {
                 startPullDown(e.touches[0].clientY);
             }, { passive: true });
 
-            homeScreenForPullDown.addEventListener('touchmove', (e) => {
+            phoneScreenForPullDown.addEventListener('touchmove', (e) => {
                 if (isPullingDown) {
                     e.preventDefault();
                     movePullDown(e.touches[0].clientY);
                 }
             }, { passive: false });
 
-            homeScreenForPullDown.addEventListener('touchend', endPullDown);
-            homeScreenForPullDown.addEventListener('touchcancel', endPullDown);
+            phoneScreenForPullDown.addEventListener('touchend', endPullDown);
+            phoneScreenForPullDown.addEventListener('touchcancel', endPullDown);
 
-            // --- 【【【新增】】】鼠标事件监听 ---
-            homeScreenForPullDown.addEventListener('mousedown', (e) => {
+            // --- 鼠标事件监听 ---
+            phoneScreenForPullDown.addEventListener('mousedown', (e) => {
                 if (startPullDown(e.clientY)) { // 如果成功开始下拉
                     const handleMouseMove = (ev) => movePullDown(ev.clientY);
                     const handleMouseUp = () => {
