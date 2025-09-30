@@ -2,9 +2,10 @@
     "name": "KikiPhone",
     "short_name": "KikiPhone",
     "description": "一个高度可定制化的AI聊天应用界面。",
-    "start_url": "/index.html",
+    "start_url": "./",
+    "scope": "./",
     "display": "standalone",
-    "background_color": "#202020  ",
+    "background_color": "#202020",
     "theme_color": "#202020",
     "orientation": "portrait-primary",
     "icons": [
