@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>KikiPhone</title>
 
-    <!-- 【【【新增 PWA “身份证” 链接】】】 -->
-    <link rel="manifest" href="manifest.json">
+    <!-- 【【【新增 PWA “身份证” 链接 & 修复路径问题】】】 -->
+    <link rel="manifest" href="./manifest.json">
 
     <!-- =================================================================== -->
 
@@ -11958,7 +11958,9 @@
                     id: 'chat_' + Date.now(),
                     name: name,
                     history: [],
-                    isPinned: false, // 【V4.0 新增】添加置顶属性
+                    isPinned: false,
+                    // 【V4.2 新增】确保新联系人有 unreadCount 属性
+                    unreadCount: 0,
                     settings: {
                         aiName: name,
                         aiAvatar: '',
@@ -11987,8 +11989,13 @@
 
                 chats.push(newChat);
                 saveChats();
+
+                // 【【【核心修复】】】 在这里，我们确保在关闭弹窗和跳转之前，就立刻刷新联系人列表
                 renderContactList();
+
                 addContactModal.classList.remove('visible');
+
+                // 跳转到新创建的聊天，这个函数内部会负责渲染聊天界面
                 openChat(newChat.id);
             }
 
