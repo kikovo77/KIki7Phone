@@ -8408,7 +8408,7 @@
                     </div>
 
 
-                    <!-- 板块2: 显示手机框 -->
+                    <!-- 板块2: 功能开关 -->
                     <div class="settings-plate">
                         <div class="settings-item main-settings-item">
                             <div class="main-settings-item-icon">
@@ -8422,6 +8422,23 @@
                             <span class="settings-item-title">显示手机框</span>
                             <label class="switch">
                                 <input type="checkbox" id="show-phone-frame-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <!-- 【【【新增：开启通知开关】】】 -->
+                        <div class="settings-item main-settings-item">
+                            <div class="main-settings-item-icon">
+                                <svg t="1759450734289" class="icon" viewBox="0 0 1024 1024" version="1.1" <svg
+                                    t="1759219534910" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                    xmlns="http://www.w3.org/2000/svg" p-id="7625" width="22" height="22">
+                                    <path
+                                        d="M512 235.52c118.57408 0 215.04 96.46592 215.04 215.04v263.86432l19.38944 20.67968 40.43776 43.136H237.1328l40.43776-43.136L296.96 714.42432V450.56c0-118.57408 96.46592-215.04 215.04-215.04m0-71.68c-158.35136 0-286.72 128.36864-286.72 286.72v235.52l-56.60672 60.38016C131.88608 785.69984 159.70816 849.92 213.49888 849.92h597.00736c53.7856 0 81.60768-64.22016 44.82048-103.45984L798.72 686.08V450.56c0-158.35136-128.36864-286.72-286.72-286.72zM583.68 890.88H440.32a35.84 35.84 0 1 0 0 71.68h143.36a35.84 35.84 0 1 0 0-71.68zM537.6 61.44H486.4a35.84 35.84 0 1 0 0 71.68h51.2a35.84 35.84 0 1 0 0-71.68z"
+                                        fill="#353333" p-id="7626"></path>
+                                </svg>
+                            </div>
+                            <span class="settings-item-title">开启消息通知</span>
+                            <label class="switch">
+                                <input type="checkbox" id="enable-notifications-toggle">
                                 <span class="slider round"></span>
                             </label>
                         </div>
@@ -9921,6 +9938,7 @@
         </div>
     </div>
 
+    <script src="./client.js"></script>
 
     <script>
         // ===================================================================
@@ -12523,18 +12541,14 @@
                         })
                     });
 
-                    // --- 【核心修复开始】---
-                    const responseText = await response.text(); // 步骤1：先获取返回的文本内容
+                    const responseText = await response.text();
 
                     if (!response.ok) {
-                        // 如果HTTP状态码不正常 (比如 404, 500)
                         let errorMsg = `HTTP error! status: ${response.status}`;
                         try {
-                            // 尝试解析这个文本，看看是不是API返回的JSON错误信息
                             const errorData = JSON.parse(responseText);
                             errorMsg = errorData.error.message || errorMsg;
                         } catch (e) {
-                            // 如果解析失败，说明返回的可能就是HTML错误页，直接把HTML片段显示出来帮助排查
                             errorMsg += ` - Response: ${responseText.substring(0, 100)}...`;
                         }
                         throw new Error(errorMsg);
@@ -12542,25 +12556,58 @@
 
                     let data;
                     try {
-                        // 步骤2：在确认请求成功后，再尝试解析JSON
                         data = JSON.parse(responseText);
                     } catch (e) {
-                        // 步骤3：如果解析失败，就抛出一个更明确的错误
                         console.error("收到的回复不是有效的JSON格式:", responseText);
                         throw new Error("收到的回复不是有效的JSON格式。请检查浏览器控制台以获取详细信息。这通常由网络问题或浏览器安全策略引起。");
                     }
-                    // --- 【核心修复结束】---
 
                     const aiReplyString = data.choices[0].message.content;
                     const replyActions = parseAiJsonResponse(aiReplyString);
 
+                    // 【【【新增：推送通知逻辑】】】
+                    // 在处理消息之前，先判断是否需要发送推送
+                    if (currentlyVisibleChatId !== originalChatId && pushSubscription) {
+                        // 只有当用户不在当前聊天界面，并且已经订阅了推送时，才执行
+                        console.log('用户不在当前页面，准备发送推送通知...');
+                        for (const action of replyActions) {
+                            const currentChat = chats.find(c => c.id === originalChatId);
+                            if (!currentChat) continue;
+
+                            let notificationBody = '';
+                            if (action.type === 'text') {
+                                notificationBody = action.content;
+                            } else if (action.type === 'sticker') {
+                                notificationBody = `[表情: ${action.name}]`;
+                            } else {
+                                notificationBody = '[收到一条新消息]';
+                            }
+
+                            const payload = {
+                                subscription: pushSubscription,
+                                message: {
+                                    title: currentChat.settings.aiName || currentChat.name,
+                                    body: notificationBody,
+                                    icon: currentChat.settings.aiAvatar || 'https://tc-new.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250912/I4Xl/1206X1501/IMG_6556.jpeg/webp',
+                                    chatId: originalChatId // 携带chatId用于后续点击跳转
+                                }
+                            };
+
+                            // 向我们的后端发送请求
+                            fetch('/send-notification', {
+                                method: 'POST',
+                                body: JSON.stringify(payload),
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            }).catch(err => console.error('发送推送请求失败:', err));
+                        }
+                    }
+
                     for (const action of replyActions) {
-                        // 【【【核心修改】】】 这里我们用回请求开始前记下的 originalChatId 来找到正确的聊天对象
                         const currentChat = chats.find(c => c.id === originalChatId);
                         if (!currentChat) continue;
 
-                        // 【【【核心修改】】】 使用“追踪器”判断是否需要增加未读数
-                        // 如果当前显示的聊天ID不是这次AI回复的聊天ID，说明用户已经退出了，那就增加未读数
                         if (currentlyVisibleChatId !== originalChatId) {
                             currentChat.unreadCount = (currentChat.unreadCount || 0) + 1;
                         }
@@ -12606,9 +12653,7 @@
                                 }
                                 break;
                             case 'end_relationship':
-                                // 这是AI主动解除关系
                                 messageToAppend = { ...aiMessageBase, type: 'couple_status', statusType: 'ai-ends-relationship', isActionable: false };
-                                // 同时处理后台数据
                                 if (coupleSpaceSettings.partnerChatId === currentChat.id) {
                                     coupleSpaceSettings.partnerChatId = null;
                                     coupleSpaceSettings.bindingDate = null;
@@ -12620,13 +12665,12 @@
                                 }
                                 break;
                             default:
-                                messageToAppend = { ...aiMessageBase, content: action.content || action.url, type: action.type, meaning: action.meaning };
+                                messageToAppend = { ...aiMessageBase, content: action.content || action.url, type: action.type, meaning: action.name };
                                 break;
                         }
 
                         if (messageToAppend) {
                             currentChat.history.push(messageToAppend);
-                            // 【【【核心修改】】】 如果用户还在此页面，则实时追加消息
                             if (currentlyVisibleChatId === originalChatId) {
                                 appendMessage(messageToAppend, messageContainer, true);
                             }
@@ -12634,12 +12678,13 @@
 
                         await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
                     }
-                    // 【【【核心修改】】】 循环结束后，统一保存并刷新列表和总数
+
                     saveChats();
                     renderContactList();
                     updateTotalUnreadBadge();
 
                 } catch (error) {
+
                     console.error('API 调用或解析出错:', error);
                     alert(`获取回复失败：${error.message}`);
                     const errorMessage = { role: 'assistant', content: `[错误: ${error.message}]`, timestamp: Date.now(), id: 'error_' + Date.now() }; // 添加了ID
@@ -16163,7 +16208,19 @@
                 updateTime();
                 setInterval(updateTime, 1000);
                 showScreen('home-screen');
+                // 【【【新增】】】初始化推送通知功能
+                initPushNotifications();
+
+                // 【【【新增】】】监听来自 Service Worker 的消息
+                navigator.serviceWorker.addEventListener('message', event => {
+                    if (event.data && event.data.type === 'OPEN_CHAT') {
+                        const chatIdToOpen = event.data.chatId;
+                        console.log('收到来自 Service Worker 的指令，打开聊天:', chatIdToOpen);
+                        openChat(chatIdToOpen);
+                    }
+                });
             }
+
 
 
             // ===================================================================
