@@ -371,10 +371,11 @@
             flex-shrink: 0;
             z-index: 10;
 
-            /* 核心修改1：默认背景透明，但边框是存在的、透明的 */
+            /* 核心修改1：默认背景透明 */
             background: transparent !important;
-            border-bottom: 1px solid transparent !important;
-            /* 默认透明 */
+            border-bottom: none !important;
+            /* 【修改】彻底移除底部分割线 */
+
 
             /* 保留原有布局 */
             height: 56px;
@@ -389,8 +390,7 @@
 
         /* 【全新】当没有壁纸时，才显示顶栏的分割线 */
         #chat-interface-screen.no-wallpaper .header {
-            border-bottom-color: #e0e0e0 !important;
-            /* 你的联系人界面的分割线颜色 */
+            /* 【修改】此规则下的 border-bottom-color 已被上面的 none 覆盖，无需修改，保留结构即可 */
         }
 
         #message-container {
@@ -407,7 +407,8 @@
     - 距离顶栏(第一个值) 距离底部输入框(第三个值)
     - 右边消息距离边(第二个值) 左边消息距离边(第四个值)
     */
-            padding: 20px 19px 10px 19px;
+            /* 【修改】大幅增加底部内边距，为浮动的输入框留出空间 */
+            padding: 20px 19px 65px 19px;
 
             background-color: transparent;
         }
@@ -453,7 +454,7 @@
 
         /* 【全新】当没有壁纸时，才显示底栏的分割线 */
         #chat-interface-screen.no-wallpaper #input-area {
-            border-top-color: #e0e0e0 !important;
+            /* 【修改】此规则下的 border-top-color 已被上面的 none 覆盖，无需修改，保留结构即可 */
         }
 
         #message-input {
@@ -536,7 +537,7 @@
             display: flex;
             align-items: flex-start;
             margin-bottom: 10px;
-            gap: 6px;
+            gap: 12px;
             position: relative;
             /* 【【【核心修复】】】 */
         }
@@ -580,20 +581,84 @@
         .message-bubble {
             max-width: 70%;
             padding: 8px 14px;
-            /* 您期望的较小内间距 */
             border-radius: 18px;
-            /* 更圆的圆角 */
             width: fit-content;
             word-wrap: break-word;
             line-height: 1.5;
             margin-bottom: 0;
-            /* 【全新默认效果】根据您最新的代码适配 */
-            background-color: rgba(32, 32, 32, 0.3);
+            /* 【【【核心修改】】】 移除了通用的颜色设置 */
+
+            /* --- 开启相对定位，作为小尾巴的定位“锚点” --- */
+            position: relative;
+        }
+
+        /* 【【【核心新增】】】 为 AI 气泡设置默认颜色 */
+        .assistant-wrapper .message-bubble {
+            background-color: #EBEBEB;
+            /* 浅灰色背景 */
+            color: #262626;
+            /* 深灰色字体 */
+        }
+
+        /* 【【【核心新增】】】 为 User 气泡设置默认颜色 */
+        .user-wrapper .message-bubble {
+            background-color: #007Aff;
+            /* 蓝色背景 */
             color: white;
-            /* 默认字体白色 */
-            backdrop-filter: blur(4px) saturate(180%);
-            -webkit-backdrop-filter: blur(4px) saturate(180%);
-            box-shadow: inset 0px 1px 0.5px rgba(76, 76, 76, 0.5), 0 0.4px 0.7px rgba(0, 0, 0, 0.235);
+            /* 白色字体 */
+        }
+
+        /* 
+        ===================================================================
+         【【【全新 V3 - 最终重构 · 还原设计】】】聊天气泡小尾巴样式
+        ===================================================================
+        */
+
+        /* --- 对方（AI）的气泡尾巴 --- */
+        .assistant-wrapper .message-bubble::after {
+            content: "";
+            position: absolute;
+            z-index: -1;
+
+            width: 20.3px;
+            height: 20px;
+
+            /* 【核心修改】精确定位到左侧 */
+            left: -9.3px;
+            bottom: 1.6px;
+
+            background: inherit;
+            backdrop-filter: inherit;
+            -webkit-backdrop-filter: inherit;
+
+            /* 【核心魔法】直接使用 User 方那个好看的路径！ */
+            clip-path: path('M-12,3 C5,4 -2,2 17,7 C5,13 5,12 0.9,18.8 Z');
+            /* 【核心魔法】通过旋转和水平翻转（scaleX(-0.9)），得到一个完美的镜像版本 */
+            transform: rotate(68deg) scaleX(-0.9);
+        }
+
+        /* --- 你（用户）的气泡尾巴 --- */
+        .user-wrapper .message-bubble::after {
+            content: "";
+            position: absolute;
+            z-index: -1;
+
+            width: 20.3px;
+            height: 20px;
+
+            /* 【核心】用户侧的精确定位 */
+            right: -9.7px;
+            bottom: 3.7px;
+
+            background: inherit;
+            backdrop-filter: inherit;
+            -webkit-backdrop-filter: inherit;
+
+            /* 【核心魔法】裁剪出另一个怪异形状，并旋转，完美复刻效果 */
+            clip-path: path('M20 0 H0 V20 H20 V0 Z');
+            /* 保证初始为方形 */
+            clip-path: path('M-12,3 C5,4 -2,2 17,7 C5,13 5,12 0.9,18.8 Z');
+            transform: rotate(-68deg) scaleX(0.9);
         }
 
         .contact-item .details {
@@ -7503,6 +7568,11 @@
             }
         }
     </style>
+    <!-- 【【【在此处新增下面的代码】】】 -->
+    <script>
+        // 定义全局后端 URL，确保所有脚本都能在第一时间访问到
+        window.BACKEND_URL = 'https://kikiphone.icu';
+    </script>
 </head>
 
 <body>
@@ -10199,11 +10269,11 @@
         </div>
     </div>
 
-    <!-- <script src="./client.js"></script>  【【【修改：暂时注释掉旧的引入方式】】】 -->
+    <script src="./client.js"></script>
 
     <script>
-        // 【【【核心修复：在此处统一定义全局后端地址】】】
-        window.BACKEND_URL = 'http://139.9.33.118';
+        // 【【【核心修复：主脚本块的顶部不应再有 BACKEND_URL 的定义】】】
+        // window.BACKEND_URL = '...';  <-- 确保这里没有这行代码了
 
         // ===================================================================
         // 【【【新增：将 client.js 的内容直接粘贴到这里】】】
@@ -11405,19 +11475,20 @@
             function formatDateSeparator(timestamp) {
                 const date = new Date(timestamp);
                 const today = new Date();
-                const yesterday = new Date(today);
+                const yesterday = new Date();
                 yesterday.setDate(yesterday.getDate() - 1);
-
-                // 清除时间部分，只比较日期
-                const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-                const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
 
                 const time = formatMessageTime(timestamp);
 
-                if (dateOnly.getTime() === todayOnly.getTime()) {
-                    return null; // 当天的消息不显示日期分隔符
-                } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
+                // Helper function to check if two dates are on the same day
+                const isSameDayCheck = (d1, d2) =>
+                    d1.getFullYear() === d2.getFullYear() &&
+                    d1.getMonth() === d2.getMonth() &&
+                    d1.getDate() === d2.getDate();
+
+                if (isSameDayCheck(date, today)) {
+                    return time; // 当天的消息，只返回时间
+                } else if (isSameDayCheck(date, yesterday)) {
                     return `昨天 ${time}`;
                 } else if (today.getTime() - date.getTime() < 7 * 24 * 60 * 60 * 1000) {
                     const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
@@ -12971,16 +13042,15 @@
                 }
             }
 
-            // 【核心重构】renderMessages 函数
+            // 【V2.30 最终修复版】renderMessages 函数
             function renderMessages() {
-                const shouldStayScrolled = messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight < 1;
+                // 在重新渲染前，判断当前是否已经滚动到底部附近
+                const shouldStayScrolled = messageContainer.scrollHeight - messageContainer.clientHeight <= messageContainer.scrollTop + 1;
 
-                messageContainer.innerHTML = '';
+                messageContainer.innerHTML = ''; // 清空容器
                 const chat = chats.find(c => c.id === activeChatId);
                 if (!chat || !chat.history) return;
 
-                let lastSeparatorTimestamp = 0; // 【核心修复】使用一个独立的变量来追踪上一个分隔符的时间
-                let lastTimestamp = 0; // 这个变量保持原样，用于其他可能的计算
                 const historyToShow = chat.history.slice(-visibleMessageCount);
 
                 // 如果还有更早的消息，显示“查看历史消息”按钮
@@ -12995,45 +13065,26 @@
                     historyLoader.onclick = () => {
                         const oldScrollHeight = messageContainer.scrollHeight;
                         visibleMessageCount += 30; // 每次多加载30条
-                        renderMessages();
+                        renderMessages(); // 重新渲染
                         const newScrollHeight = messageContainer.scrollHeight;
+                        // 核心：将滚动条定位到加载前的位置，实现无缝加载
                         messageContainer.scrollTop += (newScrollHeight - oldScrollHeight);
                     };
                     messageContainer.appendChild(historyLoader);
                 }
 
+                // 统一调用 appendMessage 来渲染每一条消息
                 historyToShow.forEach(msg => {
-                    // 【【【核心修复】】】
-                    const dateStr = formatDateSeparator(msg.timestamp);
-                    const timeDiffSinceLastSeparator = (msg.timestamp - lastSeparatorTimestamp) / (1000 * 60);
-
-                    // 只有当这条消息不是今天的时候，才考虑显示分隔符
-                    if (dateStr) {
-                        // 判断条件：
-                        // 1. 是不是和上一个分隔符不在同一天 (isSameDay 返回 false)
-                        // 2. 或者，虽然在同一天，但时间间隔超过了30分钟
-                        if (!isSameDay(msg.timestamp, lastSeparatorTimestamp) || timeDiffSinceLastSeparator >= 30) {
-                            const dateSeparator = document.createElement('div');
-                            dateSeparator.className = 'date-separator';
-                            dateSeparator.textContent = dateStr;
-                            messageContainer.appendChild(dateSeparator);
-
-                            // 只有在显示了分隔符之后，才更新这个时间戳
-                            lastSeparatorTimestamp = msg.timestamp;
-                        }
-                    }
-
-                    appendMessage(msg, messageContainer, false); // 渲染单条消息，且不触发滚动
-                    lastTimestamp = msg.timestamp; // lastTimestamp 保持更新，用于其他可能的计算
+                    appendMessage(msg, messageContainer, false); // false 表示渲染历史时不需要平滑滚动
                 });
 
-
+                // 如果之前就在底部，渲染后立即滚动到底部
                 if (shouldStayScrolled) {
                     setTimeout(() => messageContainer.scrollTop = messageContainer.scrollHeight, 0);
                 }
             }
 
-            // 【核心重构】appendMessage 函数
+            // 【V2.30 最终修复版】appendMessage 函数 (包含所有时间戳逻辑)
             function appendMessage(msg, container = messageContainer, scrollToBottom = false) {
                 if (msg.isHidden) {
                     return;
@@ -13041,9 +13092,29 @@
                 const chat = chats.find(c => c.id === activeChatId);
                 if (!chat) return;
 
+                // --- 核心时间戳逻辑 ---
+                // 1. 找到容器中最后一条消息的时间戳
+                const lastMessageElement = container.querySelector('.message-wrapper:last-of-type');
+                const lastTimestamp = lastMessageElement ? parseInt(lastMessageElement.dataset.timestamp, 10) : 0;
+
+                // 2. 计算时间差（毫秒）
+                const timeDiff = msg.timestamp - lastTimestamp;
+                const TEN_MINUTES = 10 * 60 * 1000;
+
+                // 3. 如果是第一条消息，或者时间差超过10分钟，则插入时间戳
+                if (lastTimestamp === 0 || timeDiff > TEN_MINUTES) {
+                    const dateSeparator = document.createElement('div');
+                    dateSeparator.className = 'date-separator';
+                    dateSeparator.textContent = formatDateSeparator(msg.timestamp);
+                    container.appendChild(dateSeparator);
+                }
+                // --- 时间戳逻辑结束 ---
+
+
                 const messageWrapper = document.createElement('div');
                 messageWrapper.className = `message-wrapper ${msg.role === 'user' ? 'user-wrapper' : 'assistant-wrapper'}`;
-                messageWrapper.dataset.messageId = msg.id; // 添加唯一ID
+                messageWrapper.dataset.messageId = msg.id;
+                messageWrapper.dataset.timestamp = msg.timestamp; // 【重要】存储时间戳
 
                 const defaultAvatar = 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
                 const avatar = document.createElement('img');
@@ -13127,13 +13198,9 @@
                 timestamp.className = 'message-timestamp';
                 timestamp.textContent = formatMessageTime(msg.timestamp);
 
-                // 【【【核心修改】】】预置勾选图标的HTML结构 (V2.56)
                 const checkmark = document.createElement('div');
                 checkmark.className = 'selection-checkmark';
                 checkmark.innerHTML = `<svg t="1758555701217" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="29525" width="9.2" height="9.2"><path d="M14.336 522.24c-4.096-4.096-4.096-12.288-2.048-16.384L61.44 438.272c4.096-4.096 10.24-6.144 14.336-2.048l280.576 215.04c10.24 6.144 24.576 6.144 32.768 0L948.224 174.08c4.096-4.096 12.288-4.096 16.384 0l47.104 47.104c4.096 4.096 4.096 10.24 0 14.336L389.12 845.824c-8.192 8.192-22.528 8.192-30.72 0L14.336 522.24z m0 0" p-id="29526" fill="#ffffff"></path></svg>`;
-
-                // 【删除】旧的 checkmark.classList.add('selected'); 逻辑，
-                // 因为现在完全由CSS通过 .selected 类控制
 
                 if (msg.role === 'user') {
                     messageWrapper.appendChild(timestamp);
@@ -13145,33 +13212,24 @@
                     messageWrapper.appendChild(timestamp);
                 }
 
-                // 【核心修改】无论是否在多选模式，都把勾选框的结构添加进去
                 messageWrapper.appendChild(checkmark);
 
                 container.appendChild(messageWrapper);
 
-                // 【核心】为气泡本身绑定单击事件，用于弹出菜单或多选
                 messageBubble.addEventListener('click', (e) => {
-                    // 如果是多选模式，则切换选中状态
                     if (multiSelectMode) {
                         toggleMessageSelection(msg.id, messageWrapper);
-                        return; // 阻止菜单弹出
+                        return;
                     }
 
-                    // 如果当前气泡正在被编辑，则不弹出菜单
                     if (e.currentTarget.isEditing) return;
 
-                    // 【【【新增规则】】】 如果是可点击的功能卡片，单击时不弹出菜单
-                    // 它的单击功能由另一个监听器处理（打开邀请弹窗等）
                     if (messageBubble.classList.contains('clickable')) {
                         return;
                     }
 
-                    // 否则，对于普通消息，正常打开交互菜单
                     openContextMenu(e, msg.id);
                 });
-
-
 
                 if (scrollToBottom && container === messageContainer) {
                     messageContainer.scrollTo({ top: messageContainer.scrollHeight, behavior: 'smooth' });
@@ -14226,7 +14284,7 @@
                 } else {
                     let bubbleStyles = '';
                     if (chat.settings.aiBubbleColor) {
-                        bubbleStyles += `#message-container .ai-bubble { background: ${chat.settings.aiBubbleColor} !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important; }`;
+                        bubbleStyles += `#message-container .ai-bubble { background: ${chat.settings.aiBubbleColor} !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; box-shadow: none !important; }`;
                     }
                     if (chat.settings.aiFontColor) {
                         bubbleStyles += `#message-container .ai-bubble { color: ${chat.settings.aiFontColor} !important; }`;
@@ -14234,7 +14292,7 @@
                         bubbleStyles += `#message-container .ai-bubble { color: #000 !important; }`;
                     }
                     if (chat.settings.userBubbleColor) {
-                        bubbleStyles += `#message-container .user-bubble { background: ${chat.settings.userBubbleColor} !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important; }`;
+                        bubbleStyles += `#message-container .user-bubble { background: ${chat.settings.userBubbleColor} !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; box-shadow: none !important; }`;
                     }
                     if (chat.settings.userFontColor) {
                         bubbleStyles += `#message-container .user-bubble { color: ${chat.settings.userFontColor} !important; }`;
