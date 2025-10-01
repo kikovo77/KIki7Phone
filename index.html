@@ -7568,10 +7568,9 @@
             }
         }
     </style>
-    <!-- 【【【在此处新增下面的代码】】】 -->
     <script>
-        // 定义全局后端 URL，确保所有脚本都能在第一时间访问到
-        window.BACKEND_URL = 'https://kikiphone.icu';
+        // 【最终版】定义全局后端 URL，确保所有脚本都能在第一时间访问到
+        window.BACKEND_URL = 'https://kikiphone.icu:8443';
     </script>
 </head>
 
@@ -10272,8 +10271,6 @@
     <script src="./client.js"></script>
 
     <script>
-        // 【【【核心修复：主脚本块的顶部不应再有 BACKEND_URL 的定义】】】
-        // window.BACKEND_URL = '...';  <-- 确保这里没有这行代码了
 
         // ===================================================================
         // 【【【新增：将 client.js 的内容直接粘贴到这里】】】
