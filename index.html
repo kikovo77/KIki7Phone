@@ -17858,6 +17858,31 @@
                     }
                 });
             }
+
+            // ===================================================================
+            // 【【【在这里新增下面的代码】】】
+            // ===================================================================
+            // 【新增】监听来自 Service Worker 的消息
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('message', event => {
+                    // 检查是不是“打开聊天”的指令
+                    if (event.data && event.data.type === 'OPEN_CHAT') {
+                        const chatIdToOpen = event.data.chatId;
+                        console.log('收到来自 Service Worker 的指令，打开聊天:', chatIdToOpen);
+
+                        // 确保应用已完全加载
+                        // 如果 chats 数组已经加载，就直接打开
+                        if (window.chats && window.chats.length > 0) {
+                            openChat(chatIdToOpen);
+                        } else {
+                            // 如果应用还没完全初始化好，就先记下来，等初始化完再打开
+                            document.addEventListener('appInitialized', () => {
+                                openChat(chatIdToOpen);
+                            }, { once: true });
+                        }
+                    }
+                });
+            }
             // 启动应用
             initializeApp();
         });
