@@ -367,18 +367,18 @@
 
         /* --- 聊天界面 (#chat-interface-screen) --- */
         #chat-interface-screen .header {
-            position: relative;
+            position: absolute;
             flex-shrink: 0;
             z-index: 10;
 
             /* 核心修改1：默认背景透明 */
-            background: transparent !important;
+            background: linear-gradient(to bottom, rgba(247, 247, 247, 0.8), transparent);
             border-bottom: none !important;
             /* 【修改】彻底移除底部分割线 */
-
-
+            backdrop-filter: blur(1px);
+            -webkit-backdrop-filter: blur(1px);
             /* 保留原有布局 */
-            height: 56px;
+            height: 70px;
             padding: 10px 5px;
             padding-top: 50px;
             box-sizing: content-box;
@@ -386,6 +386,51 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+        }
+
+        /* =================================================================== */
+        /* 【【【最终解决方案】】】顶栏头像与名字的独立样式与微调区 */
+        /* =================================================================== */
+        #chat-header-ai-avatar {
+            /* 1. 基础样式 (这些通常不需要动) */
+            object-fit: cover;
+            border-radius: 50%;
+            /*border: 1.5px solid rgba(255, 255, 255, 0.8);*/
+            /*box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);*/
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+
+            /* --- 【【【 您可以在这里单独微调 “头像” 的大小和上下位置 】】】 --- */
+            width: 55px !important;
+            /* 头像宽度 */
+            height: 55px !important;
+            /* 头像高度 */
+            top: 39px !important;
+            /* 头像距离顶部的距离，数值越大越往下 */
+            /* ----------------------------------------------------------- */
+        }
+
+        #chat-interface-screen .header h1 {
+            position: absolute;
+            transform: translateX(-50%);
+
+            /* --- 【【【 您可以在这里单独微调 “名字” 的大小、颜色和位置 】】】 --- */
+            font-size: 14px !important;
+            /* 名字的字体大小 */
+            color: white !important;
+            /* 名字的颜色 */
+            left: 50%;
+            /* 控制左右，50%是居中 */
+            top: 104px;
+            /* 控制上下，数值越大越往下 */
+            /* --------------------------------------------------------- */
+            font-weight: 550 !important;
+            /* 安全措施，防止标题过长 */
+            max-width: 60%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* 【全新】当没有壁纸时，才显示顶栏的分割线 */
@@ -408,13 +453,17 @@
     - 右边消息距离边(第二个值) 左边消息距离边(第四个值)
     */
             /* 【修改】大幅增加底部内边距，为浮动的输入框留出空间 */
-            padding: 20px 19px 65px 19px;
+            padding: 135px 19px 65px 19px;
 
             background-color: transparent;
         }
 
         #input-area {
-            position: relative;
+            /* 【核心修改】实现幽灵浮动 */
+            position: absolute;
+            /* position: relative; 文档流 */
+            bottom: 0;
+            left: 0;
             flex-shrink: 0;
             z-index: 10;
             background: transparent !important;
@@ -436,19 +485,21 @@
             align-items: flex-end;
             gap: 10px;
             width: 100%;
+            position: relative;
 
             /*
             ===========================================================
-             【核心 V1.60】输入区整体位置微调 (全屏模式)
+             【【【全新的】】】输入区整体位置微调 (全屏模式)
             ===========================================================
             说明：
-            - 这里控制的是 “全屏模式” 下，整个输入区域（输入框+所有按钮）的水平位置。
+            - 现在，您只需要修改这里的 left 值，就可以将整个输入区域（包括
+              输入框和所有浮动按钮）进行整体的左右平移，这正是您想要的“调节”功能！
             - 正数 (例如 left: 10px;) 会将整个区域向右移动。
             - 负数 (例如 left: -10px;) 会将整个区域向左移动。
-            - 建议先从 0px 开始，然后微调。
+            - 我先帮您设置了一个参考值，您可以自由修改。
             */
-            position: relative;
-            left: 3.5px;
+            left: -15px;
+            /* 您可以在这里自由调节 */
             top: -5.8px;
         }
 
@@ -459,64 +510,83 @@
 
         #message-input {
             flex-grow: 1;
-            padding: 10px 16px;
-            /* 【修改】减小内边距，让输入框变矮 */
+            /* 【核心修改】我们依然使用内边距来创建文字“安全区” */
+            /* 【核心修改】调整内边距，为左右浮动按钮留出空间 */
+            /* 分别是：上 右 下 左 */
+            padding: 12px 26px 10px 16px;
             border-radius: 20px;
-            /* 【修改】圆角也微调 */
-            background-color: rgba(238, 238, 238, 0.927);
-            /* 【修改】黑色半透明背景 */
-            color: white;
-            /* 【新增】字体颜色改为白色以适应深色背景 */
+            background-color: rgba(255, 255, 255, 0.066);
+            color: rgb(33, 33, 33);
             font-size: 16px;
-            max-height: 100px;
-            /* 【修改】限制最大高度 */
-            max-height: 120px;
-            max-width: 800px;
-            min-width: 200px;
+            max-height: 600px;
             resize: none;
-            box-shadow: inset 0px 1px 3px rgba(76, 76, 76, 0.5),
-                inset 0px 0px 0px rgba(0, 0, 0, 0.3),
-                0 1px 2px rgba(0, 0, 0, 0.08);
             border: none;
-            /* 【核心修改】移除了边框 */
-            /* --- 毛玻璃效果核心代码 --- */
-            backdrop-filter: blur(4px) saturate(180%);
-            -webkit-backdrop-filter: blur(4px) saturate(180%);
-            /* 
-            ===========================================================
-             【新增】输入框独立左右移动调整区
-            ===========================================================
-            说明：
-            - 通过修改下方的 left 属性值，可以单独移动输入框。
-            - 正数 (例如 left: 20px;) 会将输入框向右移动。
-            - 负数 (例如 left: -20px;) 会将输入框向左移动。
-            */
+            outline: none;
+            box-shadow:
+                inset -2px 2px 4px rgba(255, 255, 255, 0.119),
+                inset 1.22px 0 1.35px rgba(0, 0, 0, 0.11),
+                inset 0 1px 1px rgba(255, 255, 255, 0.87),
+                inset -1.22px 0 1.35px rgba(0, 0, 0, 0.11),
+                inset 0 -1.36px 1px rgba(255, 255, 255, 0.87);
+            backdrop-filter: blur(2px) saturate(106%) brightness(1.076);
+            -webkit-backdrop-filter: blur(2px) saturate(103%);
+            /* 【核心修改】移除输入框自己的 left 属性 */
             position: relative;
-            left: -40px;
-            /* 修改这个值来移动输入框 */
-
-            /*
-            ===========================================================
-             【新增】输入框宽度与大小调整区
-            ===========================================================
-            说明：
-            - 因为输入框设置了 flex-grow: 1; 它会自动填充父容器的剩余空间，
-              所以 max-width 和 min-width 主要在浏览器窗口大小变化时起到限制作用。
-            */
-            /*
-            max-width: 800px;  /* 输入框的最大宽度 */
-            /*
-            min-width: 200px;  /* 输入框的最小宽度 */
-            /*
-            font-size: 18px;   /* 输入框内的字体大小 */
-
         }
+
+        /* --- 【【【新增】】】聊天界面返回按钮圆形轮廓样式 --- */
+        #chat-interface-screen .header .header-icon[data-target="chat-list-screen"] {
+            width: 40px;
+            /* 设置宽度 */
+            height: 38px;
+            /* 设置高度 */
+            border-radius: 50%;
+            /* 设置为圆形 */
+
+            /* 【核心】以下样式从 #message-input 复制而来，以保持视觉统一 */
+            background-color: rgba(255, 255, 255, 0.248);
+            box-shadow:
+                inset -2px 2px 4px rgba(255, 255, 255, 0.119),
+                inset 1.22px 0 1.35px rgba(0, 0, 0, 0.11),
+                inset 0 1px 1px rgba(255, 255, 255, 0.87),
+                inset -1.22px 0 1.35px rgba(0, 0, 0, 0.11),
+                inset 0 -1.36px 1px rgba(255, 255, 255, 0.87);
+            backdrop-filter: blur(2px) saturate(106%) brightness(1.076);
+            -webkit-backdrop-filter: blur(2px) saturate(103%);
+
+            /* 【微调】为了让圆形更好看，移除可能继承的边框和内边距 */
+            border: none;
+            padding: 0;
+        }
+
+        /* --- 【【【新增】】】为返回箭头圆形背景开启相对定位，以便移动 --- */
+        #chat-interface-screen .header .header-icon[data-target="chat-list-screen"] {
+            position: relative;
+            /* 在这里修改 top 和 left 值来移动圆形背景 */
+            /* 正数表示向下/向右，负数表示向上/向左 */
+            top: 0px;
+            left: 7px;
+        }
+
+        /* --- 【【【新增】】】为返回箭头图标本身开启相对定位，以便进行反向移动 --- */
+        #chat-interface-screen .header .header-icon[data-target="chat-list-screen"] svg {
+            position: relative;
+            /* 在这里设置与上面圆形背景相反的值，来让图标“保持不动” */
+            top: 0px;
+            left: -3.2px;
+        }
+
+
+        /* 【【【新增】】】将圆形背景内的箭头图标颜色改为白色 
+        #chat-interface-screen .header .header-icon[data-target="chat-list-screen"] svg path {
+            fill: white;
+        }*/
 
         /* 【新增】修改输入框内提示文字的样式 */
         #message-input::placeholder {
-            /*
-             * font-size: 14px; /* 修改提示文字的大小 */
-            /* color: #cccccc;  /* 修改提示文字的颜色 */
+
+            font-size: 14px;
+            color: #ffffffba;
 
         }
 
@@ -536,10 +606,32 @@
         .message-wrapper {
             display: flex;
             align-items: flex-start;
+            /* 保持头像和内容块顶部对齐 */
             margin-bottom: 10px;
             gap: 12px;
             position: relative;
-            /* 【【【核心修复】】】 */
+        }
+
+        /* 【【【新增】】】包裹气泡和时间戳的新容器样式 */
+        .message-content-wrapper {
+            flex-grow: 1;
+            /* 【【【核心修复】】】让此容器自动填满剩余的水平空间 */
+            display: flex;
+            flex-direction: column;
+            /* 让内部元素（气泡、时间戳）垂直排列 */
+            gap: 4px;
+            /* 气泡和时间戳之间的垂直间距 */
+            /* max-width: calc(100% - 52px); 【【【核心修复】】】移除此行，因为它是不必要的限制 */
+        }
+
+        /* 【【【新增】】】用户（右侧）消息的气泡和时间戳都靠右对齐 */
+        .user-wrapper .message-content-wrapper {
+            align-items: flex-end;
+        }
+
+        /* 【【【新增】】】AI（左侧）消息的气泡和时间戳都靠左对齐 */
+        .assistant-wrapper .message-content-wrapper {
+            align-items: flex-start;
         }
 
         .user-wrapper {
@@ -1326,32 +1418,64 @@
         /* --- 独立的图标微调样式区 --- */
         /* ... 其他样式 ... */
         /* 【新增】输入框“更多”按钮SVG图标 */
+        /* 【新增】输入框“更多”按钮SVG图标 - 改为绝对定位 */
         #more-btn {
-
-            position: relative;
-            top: 0px;
-            left: -15px;
-
+            position: absolute;
+            /* <-- 核心：变为“幽灵” */
+            left: 8px;
+            /* <-- 核心：定位到父容器左侧 8px 的位置 */
+            bottom: 12px;
+            /* <-- 核心：定位到父容器底部 12px 的位置 */
+            /* 您仍然可以在这里添加 top 和 left 来进行微调 */
         }
 
-        /* 【新增】输入框“语音”按钮SVG图标 */
-        #voice-btn {
-            position: relative;
-            top: 0px;
-            left: -35px;
-        }
+        /* 【【【核心删除】】】 #voice-btn 的样式已不再需要，故删除 */
 
 
+        /* 【新增】输入框“发送”按钮SVG图标 - 改为绝对定位 (V2 - 结构分离版) */
+
+        /* 1. 这是按钮的“定位舞台”和“点击区域” */
         #send-btn {
-            position: relative;
-            top: 0px;
-            left: -48px;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            /* --- 【您可以修改这里的 right 和 bottom 来移动整个按钮】 --- */
+            right: 4px;
+            bottom: 0px;
+
+            /* --- 【这里定义了按钮的实际可点击范围】 --- */
+            width: 44px;
+            height: 44px;
         }
 
-        #generate-btn {
+        /* 2. 【【【核心】】】这是独立的圆形“背景层” */
+
+
+        /* 3. 这是独立的发送图标层 */
+        #send-btn svg {
             position: relative;
+            /* 
+            ===========================================================
+             【【【全新的】】】发送按钮SVG图标位置独立微调区
+            ===========================================================
+            说明：
+            - 在这里修改 top 和 left 值来单独移动发送图标。
+            */
             top: 0px;
-            left: -65px;
+            left: -0.3px;
+        }
+
+        /* 【新增】输入框“生成”按钮SVG图标 - 改为绝对定位 */
+        #generate-btn {
+            position: absolute;
+            /* <-- 核心：变为“幽灵” */
+            right: 40px;
+            /* <-- 核心：定位到父容器右侧 12px 的位置 */
+            bottom: 0px;
+            /* <-- 核心：定位到父容器底部 12px 的位置 */
+            /* 您仍然可以在这里添加 top 和 right/left 来进行微调 */
         }
 
         /* ... 其他样式 ... */
@@ -2251,31 +2375,54 @@
 
         /* --- 消息时间戳 --- */
         .message-timestamp {
-
             color: #646464da;
-            /* 修改：颜色加深 */
-            margin: 0 1px;
-            /* 修改：减小左右间距 */
-            padding-bottom: 2px;
-            /* 新增：微调垂直位置 */
-            align-self: flex-end;
+            font-weight: 550;
+            /* 保持颜色 */
+            margin: 0 5px;
+            font-size: 12.3px;
+            /* 左右留出一点空隙，防止紧贴边缘 */
             white-space: nowrap;
-            /* --- 新增：在这里通过 top 和 left 属性进行微调 --- */
             position: relative;
-            top: -7px;
-            /* 正数向下移动，负数向上移动 */
-            left: 0px;
-            /* 正数向右移动，负数向左移动 */
+            /* 保留相对定位以便微调 */
+
+            /* 【核心修改】移除了旧的定位和对齐代码，因为布局已由父容器控制 */
+            /* 您仍然可以在这里通过 top 和 left 微调，但现在是以新布局为基准 */
+            top: 2px;
+            left: 0;
         }
 
         /* --- 日期分隔符 --- */
         .date-separator {
             text-align: center;
-            margin: 31.5px 0;
-            /* --- 【修改】在这里调整字体大小 --- */
-            font-size: 12.3px;
-            font-weight: 500;
-            color: #474747;
+            /* 保持外层div将内容居中 */
+            margin: 11.5px 0;
+        }
+
+        /* --- 【【【全新】】】为包裹时间戳的 span 添加外壳样式 --- */
+        /* --- 【修改】默认样式：只有文字，没有背景 --- */
+        .date-separator span {
+            display: inline-block;
+            padding: 4px 0;
+            /* 只保留一点点垂直间距，移除左右和背景 */
+            background-color: transparent;
+            /* 背景透明 */
+            color: #4b4b4b;
+            /* 文字颜色使用和时间戳接近的灰色 */
+            font-size: 13.63px;
+            font-weight: 550;
+        }
+
+        /* --- 【新增】当有壁纸时 (即没有 no-wallpaper 类时)，才显示包裹图形 --- */
+        #chat-interface-screen:not(.no-wallpaper) .date-separator span {
+            padding: 2.6px 5px;
+            /* 恢复内边距 */
+            background-color: #ffffff94;
+            font-size: 12.63px;
+            /* 恢复半透明背景 */
+            color: #2c2c2c;
+            /* 在有背景时，文字颜色可以更深一些以保证清晰 */
+            border-radius: 4px;
+            /* 恢复圆角 */
         }
 
 
@@ -2285,7 +2432,7 @@
             padding: 10px;
             cursor: pointer;
             /* --- 【修改】在这里调整字体大小 --- */
-            font-size: 12.7px;
+            font-size: 13.1px;
             color: #494949;
             font-weight: 500;
         }
@@ -2663,9 +2810,12 @@
 
         #chat-interface-screen.multi-select-mode .header .header-icon,
         #chat-interface-screen.multi-select-mode .header h1,
-        #chat-interface-screen.multi-select-mode .header #chat-settings-btn {
+        #chat-interface-screen.multi-select-mode .header #chat-settings-btn,
+        #chat-interface-screen.multi-select-mode #chat-header-right-icons,
+        #chat-interface-screen.multi-select-mode #chat-header-ai-avatar {
+            /* 【【【核心新增】】】 */
             display: none;
-            /* 在多选模式下，隐藏原始顶栏元素 */
+            /* 在多选模式下，隐藏所有原始顶栏元素 */
         }
 
         #chat-interface-screen.multi-select-mode .header .multi-select-actions {
@@ -4423,7 +4573,7 @@
         /* 置顶和普通板块的通用样式 */
         .chat-section-plate {
             background-color: #ffffff;
-            border-radius: 18px;
+            border-radius: 25px;
             overflow: hidden;
             flex-shrink: 0;
             /* 防止板块在flex布局中被压缩 */
@@ -4975,6 +5125,794 @@
             border-radius: 2.5px;
         }
 
+        /* 
+        ===================================================================
+         【【【全新】】】聊天界面右上角头像样式
+        ===================================================================
+        */
+        /* --- 【【【新增】】】聊天界面顶栏右侧头像样式 --- */
+        #chat-settings-btn {
+
+            /* 防止图片拉伸变形 */
+            /* 继承自 .settings-avatar 的边框和阴影效果，让它更精致 */
+
+
+            /* 【微调】为了让它更靠右，可以添加相对定位 */
+            position: relative;
+            margin-right: 16.8px;
+            /* 负数向右移动 */
+        }
+
+        /* =================================================================== */
+        /* 【【【全新】】】聊天界面顶栏右侧图标容器 */
+        /* =================================================================== */
+        #chat-header-right-icons {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            /* 设置两个图标之间的间距，您可以微调这个数值 */
+
+            /* 微调整个图标组的位置，让它们更靠右 */
+            position: relative;
+            right: 0px;
+            /* --- 【【【核心新增】】】 --- */
+            /* 设定一个最小宽度和高度，确保背景胶囊有足够的空间显示 */
+            min-width: 90px;
+            height: 44px;
+        }
+
+        /* --- 单独微调新加的视频图标位置 --- */
+        #chat-video-btn {
+            position: relative;
+            top: 0px;
+            left: 10px;
+            /* 正数向下, 负数向上 */
+        }
+
+        /* =================================================================== */
+        /* 【【【全新】】】右上角图标组的背景胶囊样式 */
+        /* =================================================================== */
+        #chat-header-right-icons::before {
+            content: '';
+            /* 伪元素必须有这个属性才能显示 */
+            position: absolute;
+            /* 绝对定位，脱离文档流，浮动起来 */
+            z-index: -1;
+            /* 将它置于图标下方，作为背景 */
+
+            /* --- 【【【 您可以在这里单独调整胶囊背景的大小和圆角 】】】 --- */
+            width: 90px;
+            /* 胶囊的宽度 */
+            height: 45px;
+            /* 胶囊的高度 */
+            border-radius: 38px;
+            /* 圆角大小，通常是高度的一半 */
+            /* ----------------------------------------------------------- */
+
+            /* 将胶囊在父容器(#chat-header-right-icons)中完美居中 */
+            top: 50%;
+            left: 50%;
+
+            /* --- 【【【 核心修改：您可以在这里单独微调胶囊的位置 】】】 --- */
+            /* 
+             * 说明：
+             * calc(-50% + Xpx) 控制左右移动：
+             *   - X为正数 (如 +5px) 会向右移动
+             *   - X为负数 (如 -5px) 会向左移动
+             * 
+             * calc(-50% + Ypx) 控制上下移动：
+             *   - Y为正数 (如 +5px) 会向下移动
+             *   - Y为负数 (如 -5px) 会向上移动
+            */
+            transform: translate(calc(-50% + -5px), calc(-50% + 0px));
+            /* ------------------------------------------------------------- */
+
+            /* 【核心】以下样式从返回按钮复制而来，以保持视觉统一 */
+            background-color: rgba(255, 255, 255, 0.358);
+            box-shadow:
+                inset -2px 2px 4px rgba(255, 255, 255, 0.119),
+                inset 1.22px 0 1.35px rgba(0, 0, 0, 0.11),
+                inset 0 1px 1px rgba(255, 255, 255, 0.87),
+                inset -1.22px 0 1.35px rgba(0, 0, 0, 0.11),
+                inset 0 -1.36px 1px rgba(255, 255, 255, 0.87);
+            backdrop-filter: blur(2px) saturate(106%) brightness(1.076);
+            -webkit-backdrop-filter: blur(2px) saturate(103%);
+        }
+
+        /* =================================================================== */
+        /* 【【【全新】】】在多选模式下，隐藏右上角图标组的背景胶囊 */
+        /* =================================================================== */
+        #chat-interface-screen.multi-select-mode #chat-header-right-icons::before {
+            display: none;
+        }
+
+        /* =================================================================== */
+        /* 【【【全新】】】聊天顶栏中间的AI头像样式 */
+        /* =================================================================== */
+        #chat-header-ai-avatar {
+            /* 1. 基础样式 */
+            width: 42px;
+            /* 头像大小 */
+            height: 42px;
+            border-radius: 50%;
+            /* 圆形 */
+            object-fit: cover;
+            /*border: 1.5px solid rgba(255, 255, 255, 0.8);*/
+            /* 白色描边 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);*/
+            /* 轻微阴影 */
+
+            /* 2. 绝对定位，实现浮动和独立移动 */
+            position: absolute;
+
+            /* 3. 水平居中 */
+            left: 50%;
+            transform: translateX(-50%);
+
+            /* 4. 初始垂直位置 */
+            top: 60px;
+        }
+
+
+        /* 
+        ===================================================================
+         【全新】个性装扮 & 更换主题页面专属样式
+        ===================================================================
+        */
+
+        /* --- 个性装扮页 容器 --- */
+        #appearance-style-container {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 35px;
+            /* 设置两个大板块之间的垂直间距 */
+        }
+
+        .appearance-section-title {
+            font-size: 14.3px;
+            font-weight: 500;
+            color: #888;
+            margin: 0 0 12px 15px;
+            /* 标题与板块的间距 */
+        }
+
+        .appearance-plate {
+            background-color: #ffffff;
+            border-radius: 22px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            /* 图标和文字的间距 */
+            cursor: pointer;
+            /* 添加您要求的阴影 */
+        }
+
+        .appearance-item-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .appearance-item-text {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            /* 主标题和副标题的间距 */
+        }
+
+        .appearance-item-title {
+            font-size: 16px;
+            font-weight: 550;
+            color: #333;
+        }
+
+        .appearance-item-subtitle {
+            font-size: 13px;
+            color: #999;
+        }
+
+        .appearance-item-arrow {
+            flex-shrink: 0;
+            margin-right: 5px;
+        }
+
+        /* --- 更换主题页 容器 --- */
+        #theme-change-container {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            /* “当前主题”和“可选列表”之间的间距 */
+        }
+
+        /* --- 【【【全新】】】移除特定页面的顶栏分割线 --- */
+        #appearance-style-screen .header,
+        #theme-change-screen .header {
+            border-bottom: none;
+        }
+
+        #other-themes-list-wrapper .theme-item {
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            gap: 15px;
+        }
+
+
+
+        .theme-item-icon-wrapper {
+            width: 44px;
+            height: 44px;
+            border-radius: 11px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .theme-item-title {
+            font-size: 15px;
+            font-weight: 550;
+            color: #333;
+        }
+
+        /* 为“当前选中”和“可选列表”的容器添加白色背景和阴影 */
+        #current-theme-display-wrapper,
+        #other-themes-list-wrapper {
+            background-color: #ffffff;
+            border-radius: 18px;
+            overflow: hidden;
+
+        }
+
+        /* 单独为“当前选中”项设置内外边距 */
+        #current-theme-display-wrapper .theme-item {
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+
+        /* --- 主题封面图标样式 --- */
+        /* 1. iMessage日间主题 */
+        .theme-icon-imessage-day {
+            background-color: #ffffff;
+
+        }
+
+        /* 2. iMessage夜间主题 */
+        .theme-icon-imessage-dark {
+            background-color: #242424;
+        }
+
+        /* 3. 仿微信主题 (使用渐变) */
+        .theme-icon-wechat {
+            background: linear-gradient(to bottom, #19f957, #16ee53, #0de24a);
+        }
+
+        /* 4. ins风主题 */
+        .theme-icon-ins {
+            background-color: #383c3b;
+        }
+
+        /* 5. 仿pop主题 */
+        .theme-icon-pop {
+            background-color: #feeff6;
+        }
+
+
+        /* 
+        ===================================================================
+         【【【全新】】】仿微信 (WeChat) 主题专属样式
+        ===================================================================
+        说明：
+        - 以下所有样式仅在 body 标签具有 'theme-wechat' 类名时生效。
+        - 它们会覆盖掉默认的 iMessage 样式，实现主题切换。
+        - 每个区域都有详细的中文注释，方便您后续自行微调。
+        */
+
+        /* --- 1. 图标切换核心逻辑 --- */
+        /* 在微信主题下，隐藏所有iOS图标 */
+        body.theme-wechat .icon-ios {
+            display: none !important;
+        }
+
+        /* 在微信主题下，显示所有微信图标 */
+        body.theme-wechat .icon-wechat {
+            display: block !important;
+        }
+
+        /* 隐藏iOS主题下的图标组 */
+        body.theme-wechat .icon-set-ios {
+            display: none !important;
+        }
+
+
+        /* --- 2. 顶栏 (Header) 改造 --- */
+
+        /* 顶栏容器：从幽灵浮动改回文档流 */
+        body.theme-wechat #chat-interface-screen .header {
+            position: relative;
+            /* 改为 relative，进入文档流 */
+            background: rgba(246, 246, 246, 0.92) !important;
+            /* 设置为微信顶栏的浅灰色 */
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+            /* 移除毛玻璃效果 */
+            -webkit-backdrop-filter: none !important;
+            border-bottom: 0.6px solid #dcdcdc !important;
+            /* 添加细灰色分割线 */
+            height: 46px !important;
+            /* 调整为微信风格的顶栏高度 */
+            padding-top: 45px !important;
+            /* 调整内边距以适应新高度 */
+        }
+
+        /* 顶栏标题：垂直居中并调整样式 */
+        body.theme-wechat #chat-interface-screen .header h1 {
+            position: absolute;
+            /* 保持绝对定位以实现完美居中 */
+            left: 49.1%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            /* 水平垂直居中 */
+            padding-top: 35px;
+            /* 增加这个值让标题下移，实现视觉上的垂直居中 */
+            color: #202020 !important;
+            /* 标题颜色改为深黑色 */
+            font-size: 16px !important;
+            /* 稍微调大字体 */
+            font-weight: 500 !important;
+            /* 加粗 */
+        }
+
+        /* 隐藏顶栏中间的AI头像 */
+        body.theme-wechat #chat-header-ai-avatar {
+            display: none !important;
+        }
+
+        /* 移除返回按钮的圆形背景 */
+        body.theme-wechat #chat-interface-screen .header .header-icon[data-target="chat-list-screen"] {
+            background: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            left: 0;
+            /* 位置重置 */
+        }
+
+        /* 移除右侧图标组的胶囊背景 */
+        body.theme-wechat #chat-header-right-icons::before {
+            display: none !important;
+        }
+
+        /* 调整右侧图标组的位置 */
+        body.theme-wechat #chat-header-right-icons {
+            right: -10px;
+            /* 向左移动一点 */
+        }
+
+        /* --- 3. 消息区域 (Message Container) 调整 --- */
+        body.theme-wechat #message-container {
+            padding-top: 20px !important;
+            /* 减小与顶栏的间距 */
+            padding-bottom: 20px !important;
+            /* 减小与底栏的间距 */
+        }
+
+        /* --- 4. 底栏输入区 (Input Area) 改造 --- */
+
+        /* 底栏容器：从幽灵浮动改回文档流 */
+        body.theme-wechat #input-area {
+            position: relative !important;
+            /* 改为 relative，进入文档流 */
+            background: rgba(246, 246, 246, 0.92) !important;
+            /* 设置为微信顶栏的浅灰色 */
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+            /* 设置为微信底栏的灰色 */
+            border-top: 0.5px solid #e2e2e2 !important;
+            /* 添加细灰色分割线 */
+            padding: 12px 16px !important;
+            /* 调整内边距，使其更紧凑 */
+            min-height: 60px;
+            /* 设置一个最小高度 */
+            box-sizing: border-box;
+        }
+
+        /* 输入控制行：重置微调样式，并使用flex布局 */
+        /* 输入控制行：重置微调样式，并使用flex布局 */
+        body.theme-wechat #input-controls-row {
+            /* 
+            ===========================================================
+             【【【全新的】】】微信模式输入框长度（宽度）调节处
+            ===========================================================
+            说明：
+            - 修改下面的 width 值，就可以直接控制输入框的长度。
+            - 100% 代表和屏幕一样宽，大于100%（如108%）就会变长。
+            */
+            width: 85%;
+            /* 您可以在这里自由调节 */
+            /* ----------------------------------------------------- */
+
+            position: relative;
+
+            /* 
+            ===========================================================
+             【【【全新的】】】微信模式输入区左右移动调节处
+            ===========================================================
+            说明：
+            - 修改下面的 left 值，就可以将加长后的输入框区域整体左右移动。
+            - 负数向左移（比如-20px），正数向右移（比如5px）。
+            */
+            left: -15px;
+            /* 您可以在这里自由调节 */
+            /* -------------------------------------------------------- */
+
+            top: 0 !important;
+            transform: none !important;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        /* 输入框本体改造 */
+        body.theme-wechat #message-input {
+            background-color: #ffffff !important;
+            border-radius: 5px !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            color: #000000 !important;
+            font-size: 16px !important;
+
+            /* 
+            ===========================================================
+             【【【核心修复】】】解决文字被遮挡 & 统一控制内边距
+            ===========================================================
+            说明：
+            - 我们将 padding 拆分为四个值：上、右、下、左。
+            - 将第三个值（下内边距）设置得比第一个值（上内边距）稍大一点，
+              就能解决最后一行文字被遮挡的问题。
+            */
+            top: -7.8px !important;
+            padding: 5.5px 8px 8px 8px !important;
+            /* 上 右 下 左 */
+
+            /* 
+            ===========================================================
+             【【【全新的】】】微信模式输入框初始高度调节处
+            ===========================================================
+            说明：
+            - 修改下面的 min-height 值，就可以控制输入框的初始高度。
+            - 数值越大，输入框就越高。单位是 px (像素)。
+            */
+            min-height: 10px !important;
+            /* 您可以在这里自由调节 */
+            /* ----------------------------------------------------- */
+        }
+
+        /* 输入框提示文字颜色 (改为透明以隐藏) */
+        body.theme-wechat #message-input::placeholder {
+            color: transparent !important;
+        }
+
+        /* 【【【全新增补】】】 */
+        /* 强制修改微信主题下，视频图标的颜色，使其与“更多”按钮统一 */
+        body.theme-wechat #chat-video-btn svg path {
+            fill: #353333 !important;
+            /* 这个颜色值与“更多”按钮的图标颜色一致 */
+        }
+
+        /* --- 5. 输入区按钮改造 (全新 V2 - 绝对定位方案) --- */
+
+        /* 
+        ===========================================================
+         【【【全新的】】】微信模式输入区整体左右移动调节处
+        ===========================================================
+        说明：
+        - 修改下面 translateX(0px) 中的 0px 这个值，就可以将整个
+          输入区域（包括输入框和所有按钮）进行整体的左右平移。
+        - 负数 (例如: -10px) 会将整个区域向左移动。
+        - 正数 (例如: 10px) 会将整个区域向右移动。
+        */
+        body.theme-wechat #input-controls-row {
+            transform: translateX(-10px) !important;
+        }
+
+        /* ----------------------------------------------------- */
+
+        /* 将输入框本体拉长，并为右侧的浮动按钮留出空间 */
+        body.theme-wechat #message-input {
+            padding-right: 25px !important;
+            /* 核心：在右侧留出88px的空白区域 */
+        }
+
+        /* 移除所有按钮的圆形背景 */
+        body.theme-wechat #more-btn::before,
+        body.theme-wechat #generate-btn::before,
+        body.theme-wechat #send-btn::before {
+            display: none !important;
+        }
+
+        /* 移除“更多”按钮的旋转效果 */
+        body.theme-wechat #more-btn.rotated {
+            transform: none !important;
+        }
+
+        /* 微信主题下的“语音”按钮 (原more-btn) - 改回文档流定位 */
+        body.theme-wechat #more-btn {
+            left: 5px !important;
+            top: -4px !important;
+        }
+
+        /* 【核心修改】将“表情”和“加号”按钮改为绝对定位，让它们浮动起来 */
+        body.theme-wechat #generate-btn,
+        body.theme-wechat #send-btn {
+            position: absolute !important;
+            /* 核心：变为浮动元素 */
+            bottom: 4.3px !important;
+        }
+
+        /* 精确定位“表情”按钮的位置 */
+        body.theme-wechat #generate-btn {
+            right: -48px;
+            /* 距离右边50px */
+        }
+
+        /* 精确定位“加号”按钮的位置 */
+        body.theme-wechat #send-btn {
+            right: -84px;
+            /* 距离右边8px */
+        }
+
+        /* 
+===================================================================
+ 【【【全新】】】仿微信 (WeChat) 主题专属样式
+===================================================================
+*/
+
+        /* --- 1. 强制显示所有头像，并移除描边和阴影 --- */
+        body.theme-wechat .user-wrapper+.user-wrapper .chat-avatar,
+        body.theme-wechat .assistant-wrapper+.assistant-wrapper .chat-avatar {
+            visibility: visible;
+            /* 强制显示连续消息的头像 */
+        }
+
+        body.theme-wechat .chat-avatar {
+            border: none !important;
+            /* 移除头像描边 */
+            box-shadow: none !important;
+            /* 移除头像阴影 */
+        }
+
+        /* --- 1.5. 聊天界面背景色 --- */
+        body.theme-wechat #chat-interface-screen {
+            background-color: #f3f3f3 !important;
+        }
+
+        /* --- 2. 气泡样式改造：颜色、形状 --- */
+        body.theme-wechat .message-bubble {
+            border-radius: 5px;
+            /* 设置气泡的圆角值 */
+            color: #333333;
+            /* 统一将字体颜色设为黑色 */
+            padding-top: 9.8px;
+            /* 【新增】单独控制上内边距 */
+            padding-bottom: 9.8px;
+            /* 【新增】单独控制下内边距 */
+        }
+
+        /* 对方(AI)的气泡：白色背景 */
+        body.theme-wechat .assistant-wrapper .message-bubble {
+            background-color: #ffffff;
+            border: 0.15px solid #cccccc2b;
+            box-shadow: 0 0.4px 2px rgba(0, 0, 0, 0.01);
+
+        }
+
+        /* 你(用户)的气泡：绿色背景 */
+        body.theme-wechat .user-wrapper .message-bubble {
+            background-color: #a5f067;
+            border: 0.15px solid #cccccc2b;
+            box-shadow: 0 0.4px 2px rgba(0, 0, 0, 0.01);
+        }
+
+        /* --- 3. 气泡小尾巴改造：用CSS画一个圆角三角形 --- */
+
+        /* 移除旧的复杂尾巴样式 */
+        body.theme-wechat .message-bubble::after {
+            clip-path: none;
+            transform: none;
+            z-index: 0;
+            /* 确保尾巴在气泡后面 */
+        }
+
+        /* 对方(AI)的尾巴，在左边 */
+        body.theme-wechat .assistant-wrapper .message-bubble::after {
+            content: "";
+            position: absolute;
+            width: 10px;
+            /* 尾巴的尺寸 */
+            height: 10px;
+            /* 尾巴的尺寸 */
+            background: inherit;
+            /* 自动继承气泡的背景色 */
+            top: 15px;
+            /* 尾巴的垂直位置 */
+            left: -5px;
+            /* 让尾巴的一半伸出去 */
+            transform: rotate(45deg);
+            /* 旋转成菱形 */
+            border-radius: 2px;
+            /* 给尾巴一点点圆角 */
+        }
+
+        /* 你(用户)的尾巴，在右边 */
+        body.theme-wechat .user-wrapper .message-bubble::after {
+            content: "";
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: inherit;
+            top: 15px;
+            right: -5px;
+            /* 定位到右侧 */
+            transform: rotate(45deg);
+            border-radius: 2px;
+        }
+
+        /* --- 4. 微信模式下，隐藏时间戳、增加间距、加粗字体 --- */
+
+        /* 隐藏时间戳 */
+        body.theme-wechat .message-timestamp {
+            display: none !important;
+        }
+
+        /* 增加每条消息之间的垂直间距 */
+        body.theme-wechat .message-wrapper {
+            margin-bottom: 18px;
+            /* 您可以修改这个 18px 来调整间距大小 */
+        }
+
+
+        /* 【【【核心终极修复】】】 使用更高优先级的选择器，确保加粗生效 */
+        body.theme-wechat #message-container .message-bubble,
+        body.theme-wechat #message-container .message-bubble span {
+            font-weight: 550 !important;
+            /* 550是中等粗细，您可以改为 600 或 700 更粗 */
+        }
+
+        /* --- 6. 微信主题下的引用消息样式 (V3 - 动态颜色最终版) --- */
+
+        /* a. (保持不变) 把包含引用的气泡“架子”掏空 */
+        body.theme-wechat .message-bubble.default-style-reply {
+            display: flex;
+            flex-direction: column;
+            background-color: transparent !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        body.theme-wechat .message-bubble.default-style-reply::after {
+            display: none !important;
+        }
+
+        /* b. (保持不变) 重新为“主消息文本”添加气泡样式 */
+        body.theme-wechat .message-bubble.default-style-reply .message-text {
+            padding: 10px;
+            border-radius: 5px;
+            position: relative;
+            width: fit-content;
+            color: #333333;
+            /* 确保字体颜色正确 */
+        }
+
+        body.theme-wechat .user-wrapper .message-bubble.default-style-reply .message-text {
+            background-color: #acf372;
+            align-self: flex-end;
+        }
+
+        body.theme-wechat .user-wrapper .message-bubble.default-style-reply .message-text::after {
+            content: "";
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: inherit;
+            top: 10px;
+            right: -5px;
+            transform: rotate(45deg);
+            border-radius: 1px;
+            z-index: -1;
+        }
+
+        body.theme-wechat .assistant-wrapper .message-bubble.default-style-reply .message-text {
+            background-color: #ffffff;
+            align-self: flex-start;
+        }
+
+        body.theme-wechat .assistant-wrapper .message-bubble.default-style-reply .message-text::after {
+            content: "";
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: inherit;
+            top: 10px;
+            left: -5px;
+            transform: rotate(45deg);
+            border-radius: 1px;
+            z-index: -1;
+        }
+
+        /* c. 【【【核心修改】】】为“引用框”设置全新的、包含动态颜色逻辑的样式 */
+        body.theme-wechat .reply-content-wrapper {
+            order: 2;
+            /* 【默认样式 - 有壁纸时】半透明深色背景 */
+            background-color: rgba(249, 249, 249, 0.597) !important;
+            color: #555;
+            /* 深灰色文字，保证对比度 */
+
+            /* --- 布局和尺寸样式 (保持不变) --- */
+            padding: 9px 12px !important;
+            border-radius: 5px !important;
+            margin-top: 8px;
+            font-size: 13.5px;
+            width: fit-content;
+            max-width: 100% !important;
+
+            /* --- 长文截断功能 (保持不变) --- */
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-all;
+            line-height: 1.4;
+            max-height: 2.63em;
+        }
+
+        /* d. (保持不变) 引用文本的作者/内容样式 */
+        body.theme-wechat .reply-content-wrapper .reply-author,
+        body.theme-wechat .reply-content-wrapper .reply-text {
+            display: inline;
+        }
+
+        /* e. 【【【核心新增】】】当没有壁纸时，覆盖引用框的颜色 */
+        body.theme-wechat #chat-interface-screen.no-wallpaper .reply-content-wrapper {
+            background-color: #ebebeb !important;
+            /* 恢复为不透明的浅灰色 */
+            color: #888 !important;
+            /* 恢复为颜色稍浅的文字 */
+        }
+
+        /* f. (保持不变) 用户侧的引用框也需要靠右 */
+        body.theme-wechat .user-wrapper .reply-content-wrapper {
+            align-self: flex-end;
+        }
+
+        /* d. 实现引用文本的“最多两行省略号”效果 */
+        body.theme-wechat .reply-content-wrapper .reply-author,
+        body.theme-wechat .reply-content-wrapper .reply-text {
+            display: inline;
+            /* 让作者和内容能在一行显示 */
+        }
+
+
+
+        body.theme-wechat #message-container {
+            padding-bottom: 2px !important;
+            /* 减小底部的内边距 */
+        }
+
         /* css结束 */
 
 
@@ -5007,13 +5945,78 @@
 
         }
 
-        /* 【全新】更多功能按钮的交互样式 */
+        /* 【全新】更多功能按钮的交互样式 (V2 - 结构分离版) */
+
+        /* 1. 这是按钮的“定位舞台”和“点击区域” */
         #more-btn {
             position: relative;
+            /* 保持相对定位，作为内部元素的“锚点” */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            /* --- 【您可以修改这里的 top 和 left 来移动整个按钮】 --- */
             top: 0px;
-            left: -15px;
-            /* 【新增】为旋转动画添加平滑过渡 */
+            /* 正数向下, 负数向上 */
+            left: 5px;
+            /* 正数向右, 负数向左 */
+
+            /* --- 【这里定义了按钮的实际可点击范围】 --- */
+            /*     通常比看到的圆形稍大一点，方便用户点击   */
+            width: 44px;
+            height: 44px;
+
+            /* 保留原有的旋转动画效果 */
             transition: transform 0.3s ease-in-out;
+        }
+
+        /* 2. 【【【核心】】】这是独立的圆形“背景层” */
+        #more-btn::before {
+            content: '';
+            position: absolute;
+            /* 绝对定位，浮动在“舞台”后面 */
+            z-index: -1;
+            /* 确保它在图标的后面 */
+
+            /* 
+            ===========================================================
+             【【【全新的】】】圆形背景大小独立调节区
+            ===========================================================
+            说明：
+            - 在这里修改 width 和 height，就可以单独调整圆形背景的大小，
+              不会影响到图标或者按钮的点击范围。
+            */
+            width: 38px;
+            /* 您可以在这里修改圆形的宽度 */
+            height: 38px;
+            /* 您可以在这里修改圆形的高度 */
+
+            /* --- 以下是完全复制自返回按钮的“玻璃质感”样式 --- */
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.139);
+            box-shadow:
+                inset -2px 2px 4px rgba(255, 255, 255, 0.119),
+                inset 1.22px 0 1.35px rgba(0, 0, 0, 0.11),
+                inset 0 1px 1px rgba(255, 255, 255, 0.87),
+                inset -1.22px 0 1.35px rgba(0, 0, 0, 0.11),
+                inset 0 -1.36px 1px rgba(255, 255, 255, 0.87);
+            backdrop-filter: blur(2px) saturate(106%) brightness(1.076);
+            -webkit-backdrop-filter: blur(2px) saturate(103%);
+        }
+
+        /* 3. 这是独立的“+”号图标层 */
+        #more-btn svg {
+            position: relative;
+            /* 
+            ===========================================================
+             【【【全新的】】】SVG图标位置独立微调区
+            ===========================================================
+            说明：
+            - 在这里修改 top 和 left 值来单独移动“+”图标，
+              让它在圆形背景中居中或者偏移。
+            */
+            top: 0px;
+            left: 0px;
         }
 
         #more-btn.rotated {
@@ -5719,7 +6722,8 @@
             width: 450px;
             height: 844px;
             min-height: 844px;
-            /* 防止在flex布局中被压缩 */
+            /* 【【【核心修复】】】明确禁止flex项目收缩 */
+            flex-shrink: 0;
 
             /* 
             ===========================================================
@@ -5853,7 +6857,7 @@
             - 您可以修改下面的 left 值来解决您在截图中看到的对齐问题。
               我根据截图估算了一个值，您可以自行微调。
             */
-            left: 11.8px;
+            left: -4px;
             top: -6.5px;
 
             /*
@@ -6514,7 +7518,7 @@
         }
 
         .app-icon-reset-btn {
-            background-color: #e5e5e5;
+            background-color: #ff0000;
             color: #333;
         }
 
@@ -6555,7 +7559,7 @@
             gap: 10px;
             background-color: #f0f0f0;
             padding: 12px 15px;
-            border-radius: 12px;
+            border-radius: 19px;
             flex-grow: 1;
             /* 让灰色块占据所有剩余空间 */
         }
@@ -6916,6 +7920,9 @@
         /* 【新增】只为禁词项添加灰色背景 */
         .preset-list-item.forbidden-words-item {
             background-color: #f0f0f0;
+            border-radius: 25px;
+            overflow: hidden;
+            flex-shrink: 0;
         }
 
         .preset-list-avatar {
@@ -7580,6 +8587,7 @@
     <!-- 2. HTML 结构区 -->
     <!-- =================================================================== -->
     <div id="phone-wrapper">
+
         <div id="phone-screen">
             <!-- 【新增】手机顶部状态栏 -->
             <!-- =================================================================== -->
@@ -7960,8 +8968,8 @@
                                     </div>
                                     <span class="me-settings-item-title">个人</span>
                                 </div>
-                                <!-- 个性装扮 -->
-                                <div class="me-settings-item">
+                                <!-- 个性装扮 (新增的入口) -->
+                                <div class="me-settings-item" id="goto-appearance-style-btn">
                                     <div class="me-settings-item-icon">
                                         <svg t="1759055000181" class="icon" viewBox="0 0 1024 1024" version="1.1"
                                             xmlns="http://www.w3.org/2000/svg" p-id="1921" width="18" height="18">
@@ -8031,22 +9039,63 @@
                 <div class="header">
                     <!-- 原始顶栏元素 -->
                     <button class="header-icon" data-target="chat-list-screen">
-                        <svg id="back-arrow-icon" t="1757281244500" class="icon" viewBox="0 0 1024 1024" version="1.1"
-                            xmlns="http://www.w3.org/2000/svg" p-id="8645" width="18" height="18">
+                        <!-- iOS主题的返回箭头图标 -->
+                        <svg class="icon-ios" id="back-arrow-icon" t="1757281244500" class="icon"
+                            viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8645"
+                            width="18" height="18">
+                            <path
+                                d="M723.413333 895.701333c-9.6 0-19.328-3.2-27.434666-9.6l-423.765334-340.906666a43.733333 43.733333 0 0 1 0-68.096l421.973334-339.114667a43.690667 43.690667 0 0 1 54.698666 68.096L369.28 511.146667l381.525333 306.901333a43.690667 43.690667 0 0 1-27.392 77.696z"
+                                fill="#ffffff" p-id="8646"></path>
+                        </svg>
+                        <!-- 微信主题的返回箭头图标 (颜色不同，默认隐藏) -->
+                        <svg class="icon-wechat" style="display: none;" id="back-arrow-icon" t="1757281244500"
+                            class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                            p-id="8645" width="18" height="18">
                             <path
                                 d="M723.413333 895.701333c-9.6 0-19.328-3.2-27.434666-9.6l-423.765334-340.906666a43.733333 43.733333 0 0 1 0-68.096l421.973334-339.114667a43.690667 43.690667 0 0 1 54.698666 68.096L369.28 511.146667l381.525333 306.901333a43.690667 43.690667 0 0 1-27.392 77.696z"
                                 fill="#515151" p-id="8646"></path>
                         </svg>
                     </button>
-                    <h1 id="chat-contact-name">...</h1>
-                    <button class="header-icon" id="chat-settings-btn">
-                        <svg id="chat-settings-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"
-                            width="24" height="24">
-                            <path fill="#515151"
-                                d="M128 512a64 64 0 1 0 128 0 64 64 0 1 0-128 0z m320 0a64 64 0 1 0 128 0 64 64 0 1 0-128 0z m320 0a64 64 0 1 0 128 0 64 64 0 1 0-128 0z">
-                            </path>
-                        </svg>
-                    </button>
+                    <!-- =================================================================== -->
+                    <!-- 【【【全新】】】在标题前新增用于显示头像的 img 标签 -->
+                    <!-- =================================================================== -->
+                    <img id="chat-header-ai-avatar" src="">
+                    <!-- =================================================================== -->
+
+                    <h1 id="chat-contact-name">头像</h1>
+                    <!-- =================================================================== -->
+                    <!-- 【【【核心修改】】】用一个新的 div 包裹右侧所有图标 -->
+                    <!-- =================================================================== -->
+                    <div id="chat-header-right-icons">
+                        <button class="header-icon" id="chat-video-btn">
+                            <svg t="1759492268248" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                xmlns="http://www.w3.org/2000/svg" p-id="39859" width="23" height="25">
+                                <path
+                                    d="M151.272727 279.272727A58.228364 58.228364 0 0 0 93.090909 337.454545v372.363637C93.090909 741.911273 119.179636 768 151.272727 768h512c32.093091 0 58.181818-26.088727 58.181818-58.181818v-372.363637c0-32.093091-26.088727-58.181818-58.181818-58.181818h-512zM791.272727 439.389091l106.728728-106.752a46.405818 46.405818 0 0 1 50.734545-10.100364A46.429091 46.429091 0 0 1 977.454545 365.544727v316.183273a46.429091 46.429091 0 0 1-46.592 46.568727c-12.101818 0-23.924364-4.724364-32.86109-13.661091L791.272727 607.906909V709.818182c0 70.562909-57.437091 128-128 128h-512A128.162909 128.162909 0 0 1 23.272727 709.818182v-372.363637C23.272727 266.891636 80.709818 209.454545 151.272727 209.454545h512c70.562909 0 128 57.437091 128 128v101.934546z m14.452364 84.247273l101.934545 101.911272v-203.822545L805.701818 523.636364z"
+                                    fill="#ffffff" p-id="39860"></path>
+                            </svg>
+                        </button>
+                        <button class="header-icon" id="chat-settings-btn">
+                            <!-- 原有的搜索图标SVG -->
+                            <svg class="icon-ios" t="1759495362563" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                xmlns="http://www.w3.org/2000/svg" p-id="44792" width="19" height="19">
+                                <path
+                                    d="M1004.8 1004.8c-25.6 25.6-64 25.6-89.6 0L716.8 806.4C544 934.4 307.2 928 147.2 780.8-32 614.4-44.8 320 128 140.8s460.8-185.6 640-6.4c160 160 172.8 409.6 38.4 582.4l198.4 198.4c25.6 25.6 25.6 64 0 89.6zM704 262.4c-128-179.2-390.4-179.2-518.4 0-83.2 108.8-83.2 268.8 0 377.6 128 179.2 390.4 179.2 518.4 0 83.2-115.2 83.2-268.8 0-377.6z"
+                                    fill="#ffffff" p-id="44793"></path>
+                            </svg>
+                            <!-- 新增的微信主题“更多”图标SVG，默认隐藏 -->
+                            <svg class="icon-wechat" style="display: none;" t="1759753127868" class="icon"
+                                viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="205492"
+                                width="22" height="22">
+                                <path
+                                    d="M221 592c-44.183 0-80-35.817-80-80s35.817-80 80-80 80 35.817 80 80-35.817 80-80 80z m291 0c-44.183 0-80-35.817-80-80s35.817-80 80-80 80 35.817 80 80-35.817 80-80 80z m291 0c-44.183 0-80-35.817-80-80s35.817-80 80-80 80 35.817 80 80-35.817 80-80 80z"
+                                    fill="#353333" p-id="205493"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- =================================================================== -->
+                    <!-- 【【【修改结束】】】 -->
+                    <!-- =================================================================== -->
 
                     <!-- 【【【全新】】】多选模式下的顶栏 -->
                     <div class="multi-select-actions">
@@ -8071,49 +9120,84 @@
                     </div>
                     <!-- 【核心修改1】将原有的输入行包裹起来 -->
                     <div id="input-controls-row">
-                        <!-- 更多功能按钮 -->
+                        <!-- 更多功能按钮 (微信主题下是语音图标) -->
                         <button id="more-btn" class="action-button">
-                            <svg t="1757444626090" class="icon" viewBox="0 0 1024 1024" version="1.1"
-                                xmlns="http://www.w3.org/2000/svg" p-id="34660" width="22" height="22">
+                            <!-- iOS主题的“+”图标 -->
+                            <svg class="icon-ios" t="1759484359555" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                xmlns="http://www.w3.org/2000/svg" p-id="7469" width="15" height="15">
                                 <path
-                                    d="M696 480H544V328c0-4.4-3.6-8-8-8h-48c-4.4 0-8 3.6-8 8v152H328c-4.4 0-8 3.6-8 8v48c0 4.4 3.6 8 8 8h152v152c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V544h152c4.4 0 8-3.6 8-8v-48c0-4.4-3.6-8-8-8z"
-                                    p-id="34661" fill="#353333"></path>
+                                    d="M913.536524 551.447587H116.910163c-23.637854 0-42.977915-19.340062-42.977916-42.977916s19.340062-42.977915 42.977916-42.977915h796.626361c23.637854 0 42.977915 19.340062 42.977916 42.977915s-19.340062 42.977915-42.977916 42.977916z"
+                                    p-id="7470" fill="#ffffff"></path>
                                 <path
-                                    d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"
-                                    p-id="34662" fill="#353333"></path>
+                                    d="M472.194264 906.731688V110.105326c0-23.637854 19.340062-42.977915 42.977915-42.977915s42.977915 19.340062 42.977916 42.977915v796.626362c0 23.637854-19.340062 42.977915-42.977916 42.977915s-42.977915-19.340062-42.977915-42.977915z"
+                                    p-id="7471" fill="#ffffff"></path>
                             </svg>
-                        </button>
-                        <!-- 语音按钮 -->
-                        <button id="voice-btn" class="action-button">
-                            <svg t="1757444947062" class="icon" viewBox="0 0 1024 1024" version="1.1"
-                                xmlns="http://www.w3.org/2000/svg" p-id="35967" width="23" height="23">
+                            <!-- 微信主题的“语音”图标，默认隐藏 -->
+                            <svg class="icon-wechat" style="display: none;" t="1759752862852" class="icon"
+                                viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="185160"
+                                width="27.4" height="27.4">
                                 <path
-                                    d="M544 851.946667V906.666667a32 32 0 0 1-64 0v-54.72C294.688 835.733333 149.333333 680.170667 149.333333 490.666667v-21.333334a32 32 0 0 1 64 0v21.333334c0 164.949333 133.717333 298.666667 298.666667 298.666666s298.666667-133.717333 298.666667-298.666666v-21.333334a32 32 0 0 1 64 0v21.333334c0 189.514667-145.354667 345.066667-330.666667 361.28zM298.666667 298.56C298.666667 180.8 394.165333 85.333333 512 85.333333c117.781333 0 213.333333 95.541333 213.333333 213.226667v192.213333C725.333333 608.533333 629.834667 704 512 704c-117.781333 0-213.333333-95.541333-213.333333-213.226667V298.56z m64 0v192.213333C362.666667 573.12 429.557333 640 512 640c82.496 0 149.333333-66.805333 149.333333-149.226667V298.56C661.333333 216.213333 594.442667 149.333333 512 149.333333c-82.496 0-149.333333 66.805333-149.333333 149.226667z"
-                                    fill="#353333" p-id="35968"></path>
+                                    d="M593.024 234.496l-46.165333 46.229333c0.106667 0.085333 0.149333 0.149333 0.277333 0.234667 127.552 127.658667 127.552 334.677333 0 462.336l46.122667 46.250667c153.045333-153.194667 153.045333-401.621333 0-554.816C593.173333 234.666667 593.130667 234.56 593.024 234.496z"
+                                    p-id="185161" fill="#353333"></path>
+                                <path
+                                    d="M500.885333 327.189333c-0.042667-0.085333-0.128-0.149333-0.234667-0.213333l-46.165333 46.229333c0.042667 0.085333 0.128 0.149333 0.234667 0.256 76.48 76.565333 76.48 200.789333 0 277.397333l46.144 46.229333C603.008 595.008 603.008 429.333333 500.885333 327.189333z"
+                                    p-id="185162" fill="#353333"></path>
+                                <path
+                                    d="M408.32 419.434667l-92.394667 92.458667 92.629333 92.714667c51.008-51.114667 51.008-133.888 0-184.938667C408.469333 419.584 408.362667 419.52 408.32 419.434667z"
+                                    p-id="185163" fill="#353333"></path>
+                                <path
+                                    d="M512 0C229.696 0 0 229.696 0 512c0 282.282667 229.696 512 512 512 282.282667 0 512-229.717333 512-512C1024 229.696 794.282667 0 512 0zM512 981.290667C253.226667 981.290667 42.688 770.773333 42.688 512S253.226667 42.688 512 42.688 981.290667 253.226667 981.290667 512 770.773333 981.290667 512 981.290667z"
+                                    p-id="185164" fill="#353333"></path>
                             </svg>
                         </button>
                         <!-- 输入框 -->
-                        <textarea id="message-input" placeholder="입력..." rows="1"></textarea>
-                        <!-- 发送按钮 -->
-                        <button id="send-btn" class="action-button">
-                            <svg t="1757445050961" class="icon" viewBox="0 0 1024 1024" version="1.1"
-                                xmlns="http://www.w3.org/2000/svg" p-id="37600" width="24" height="24">
-                                <path
-                                    d="M392.021333 925.013333a34.133333 34.133333 0 0 1-34.133333-34.133333V579.242667c0-10.24 4.608-19.968 12.629333-26.453334l276.48-224.085333a34.0992 34.0992 0 0 1 43.008 52.906667L426.154667 595.456v192.853333l82.944-110.592c10.069333-13.482667 28.672-17.578667 43.52-9.557333l137.557333 73.728L853.333333 156.16c3.242667-11.434667-3.413333-18.602667-6.485333-21.162667-3.072-2.56-11.093333-7.850667-21.845333-2.901333L206.336 422.4l80.213333 46.08c16.384 9.386667 22.016 30.208 12.629334 46.592s-30.208 22.016-46.592 12.629333l-137.045334-78.677333a33.979733 33.979733 0 0 1-17.066666-31.061333c0.512-12.8 8.021333-24.064 19.626666-29.525334L795.989333 70.314667c31.744-14.848 68.096-10.069333 94.890667 12.629333a87.790933 87.790933 0 0 1 28.16 91.477333L744.277333 801.28a34.082133 34.082133 0 0 1-48.981333 20.821333L546.133333 742.058667l-126.805333 169.301333c-6.656 8.704-16.896 13.653333-27.306667 13.653333z"
-                                    fill="#353333" p-id="37601"></path>
-                            </svg>
-                        </button>
-                        <!-- 生成按钮 -->
+                        <textarea id="message-input" placeholder="iMessage信息" rows="1"></textarea>
+                        <!-- 生成按钮 (微信主题下是表情图标) -->
                         <button id="generate-btn" class="action-button">
-                            <svg t="1757445162269" class="icon" viewBox="0 0 1024 1024" version="1.1"
-                                xmlns="http://www.w3.org/2000/svg" p-id="41878" width="21" height="21">
+                            <!-- iOS主题的声波图标 -->
+                            <svg class="icon-ios" t="1759483678427" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                xmlns="http://www.w3.org/2000/svg" p-id="5861" width="22" height="22">
                                 <path
-                                    d="M958.681412 457.499032c-6.170072-50.632177-20.854483-99.563886-43.643361-145.434552-45.779694-92.144205-122.249797-166.333021-215.325711-208.898719-20.083724-9.18513-43.810309-0.349891-52.995439 19.734833-9.18413 20.082724-0.349891 43.810309 19.733833 52.996438 159.26323 72.834239 245.755201 249.640987 205.658732 420.410622-30.735395 130.876101-129.201624 233.321087-256.187941 270.333521l-0.262918-70.800875-196.843487 114.650172 197.690222 113.176632-0.275914-74.43274c75.398438-17.911403 144.809747-54.929834 202.084849-108.039237 65.597501-60.827991 111.122274-139.186504 131.651859-226.606186 12.170197-51.828803 15.10328-104.683286 8.715276-157.089909zM408.299406-0.001l0.271915 74.43374c-75.404436 17.911403-144.820744 54.931834-202.099843 108.046235-65.6005 60.83099-111.124274 139.191503-131.651859 226.616183-7.987504 34.034364-11.994252 68.507591-11.994252 103.010809 0 17.994377 1.090659 35.996751 3.271978 53.946142 6.152077 50.59119 20.803499 99.48891 43.545392 145.333583 45.678725 92.080225 122.012871 166.270041 214.936832 208.900718 20.071728 9.209122 43.810309 0.401874 53.018432-19.670852 9.210122-20.076726 0.400875-43.810309-19.671853-53.019432-158.963324-72.92821-245.278351-249.658982-205.24886-420.22368 30.732396-130.883099 129.201624-233.333083 256.195939-270.345517l0.259919 70.801874 196.850484-114.640174L408.299406-0.001z"
-                                    fill="#353333" p-id="41879"></path>
+                                    d="M502.386939 133.746939a44.303673 44.303673 0 0 0-44.094694 44.261877v663.802776a44.303673 44.303673 0 0 0 44.094694 44.261877 44.303673 44.303673 0 0 0 44.115592-44.261877V178.008816a44.303673 44.303673 0 0 0-44.094694-44.261877z m-176.462368 154.895673a44.303673 44.303673 0 0 0-44.115591 44.24098v354.053224a44.303673 44.303673 0 0 0 44.094693 44.24098 44.303673 44.303673 0 0 0 44.13649-44.24098V332.883592a44.303673 44.303673 0 0 0-44.115592-44.24098z m352.945633 0a44.303673 44.303673 0 0 0-44.115592 44.24098v354.053224a44.303673 44.303673 0 0 0 44.094694 44.24098 44.303673 44.303673 0 0 0 44.13649-44.24098V332.883592a44.303673 44.303673 0 0 0-44.115592-44.24098zM149.420408 377.145469a44.303673 44.303673 0 0 0-44.094694 44.261878v177.005714a44.303673 44.303673 0 0 0 44.094694 44.261878 44.303673 44.303673 0 0 0 44.115592-44.261878v-177.005714a44.303673 44.303673 0 0 0-44.094694-44.261878z m705.891265 0a44.303673 44.303673 0 0 0-44.115591 44.261878v177.005714a44.303673 44.303673 0 0 0 44.115591 44.261878 44.303673 44.303673 0 0 0 44.115592-44.261878v-177.005714a44.303673 44.303673 0 0 0-44.094694-44.261878z"
+                                    fill="#ffffff" p-id="5862"></path>
+                            </svg>
+                            <!-- 微信主题的“表情”图标，默认隐藏 -->
+                            <svg class="icon-wechat" style="display: none;" t="1759753098423" class="icon"
+                                viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="203941"
+                                width="26" height="26">
+                                <path
+                                    d="M512 0C229.2 0 0 229.2 0 512s229.2 512 512 512 512-229.2 512-512S794.8 0 512 0z m0 960C265 960 64 759 64 512S265 64 512 64s448 201 448 448-201 448-448 448z"
+                                    p-id="203942" fill="#353333"></path>
+                                <path d="M320 405.3m-64 0a64 64 0 1 0 128 0 64 64 0 1 0-128 0Z" p-id="203943"
+                                    fill="#353333"></path>
+                                <path d="M704 405.3m-64 0a64 64 0 1 0 128 0 64 64 0 1 0-128 0Z" p-id="203944"
+                                    fill="#353333"></path>
+                                <path
+                                    d="M512 810.7c117.8 0 213.3-95.5 213.3-213.3H298.7c0 117.8 95.5 213.3 213.3 213.3z"
+                                    p-id="203945" fill="#353333"></path>
                             </svg>
                         </button>
-
-
+                        <!-- 发送按钮 (微信主题下是加号图标) -->
+                        <button id="send-btn" class="action-button">
+                            <!-- iOS主题的图钉图标 -->
+                            <svg class="icon-ios" t="1759485785406" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                xmlns="http://www.w3.org/2000/svg" p-id="36563" width="20" height="20">
+                                <path
+                                    d="M902.8 192.9c-36.8-39-86.9-60.8-139.1-60.7h-0.2c-52-0.1-102 21.6-138.7 60.4l-0.1 0.1-362.3 381.2c-33.7 35.6-43.7 89-25.4 135.4 18.3 46.4 61.4 76.6 109.2 76.5 30.2 0 60.3-12 83.2-36.2l362.3-381.2c15.4-16.2 15.4-42.4 0-58.6-15.4-16.2-40.3-16.2-55.7 0L373.8 691c-7.4 7.7-17.4 12-27.8 12-10.4 0-20.4-4.4-27.7-12.2-7.5-7.6-11.7-18.1-11.8-29.1 0-11 4.1-21.5 11.5-29.2l362.3-381.2c22-23.3 52-36.3 83.2-36.2h0.1c31.3-0.1 61.4 13.1 83.5 36.4 22.3 23.4 34.6 54.7 34.6 87.8 0.1 32.9-12.3 64.5-34.4 87.7l-97.8 102.9-0.6 0.6-271.1 285.4c-76.9 80.8-201.5 80.9-278.5 0.1-37-38.8-57.7-91.5-57.5-146.4 0-55.4 20.5-107.5 57.7-146.6l369.4-388.7c15.4-16.2 15.4-42.4 0-58.6-15.4-16.2-40.3-16.2-55.7 0L143.8 464.4c-51.9 54.3-81 128.2-80.8 205.2 0 77.5 28.6 150.4 80.6 205 51.6 54.4 121.7 84.9 194.8 84.7 73.2 0.1 143.4-30.4 195.1-84.9l383.1-403.1c3.8-4.1 6.8-9 8.7-14.3 22.8-34.4 35.2-75 35.2-117.8 0.1-54.9-20.7-107.6-57.7-146.3"
+                                    p-id="36564" fill="#ffffff"></path>
+                            </svg>
+                            <!-- 微信主题的“+”图标，默认隐藏 -->
+                            <svg class="icon-wechat" style="display: none;" t="1759752903234" class="icon"
+                                viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="187044"
+                                width="26.7" height="26.7">
+                                <path
+                                    d="M516.829 43.822c-259.419 0-469.715 210.296-469.715 469.714 0 259.413 210.296 469.709 469.715 469.709 259.413 0 469.709-210.296 469.709-469.709 0-259.418-210.296-469.714-469.709-469.714z m0.001 885.853c-229.833 0-416.145-186.313-416.145-416.143 0-229.827 186.312-416.14 416.145-416.14 229.827 0 416.138 186.313 416.138 416.14 0 229.829-186.311 416.143-416.138 416.143z"
+                                    fill="#353333" p-id="187045"></path>
+                                <path
+                                    d="M544.51 789.842H489.2V541.188H240.546V485.88H489.2V237.226h55.252V485.88h248.653v55.25H544.51z"
+                                    fill="#353333" p-id="187046"></path>
+                            </svg>
+                        </button>
                     </div>
 
                     <!-- 【核心修改2】在这里新增功能面板的完整HTML结构 -->
@@ -9843,6 +10927,96 @@
             </div>
 
             <!-- =================================================================== -->
+            <!-- 【全新】个性装扮页面 -->
+            <!-- =================================================================== -->
+            <div id="appearance-style-screen" class="screen">
+                <div class="header">
+                    <button class="header-icon" id="back-from-appearance-style-btn">
+                        <svg id="back-arrow-icon" viewBox="0 0 1024 1024" width="18" height="18">
+                            <path
+                                d="M723.413333 895.701333c-9.6 0-19.328-3.2-27.434666-9.6l-423.765334-340.906666a43.733333 43.733333 0 0 1 0-68.096l421.973334-339.114667a43.690667 43.690667 0 0 1 54.698666 68.096L369.28 511.146667l381.525333 306.901333a43.690667 43.690667 0 0 1-27.392 77.696z"
+                                fill="#515151"></path>
+                        </svg>
+                    </button>
+                    <h1>个性装扮</h1>
+                    <div style="width: 44px;"></div>
+                </div>
+                <div class="form-container" id="appearance-style-container">
+                    <!-- 当前主题 -->
+                    <div class="appearance-section">
+                        <h3 class="appearance-section-title">当前主题</h3>
+                        <div class="appearance-plate" id="current-theme-item">
+                            <div class="appearance-item-icon-wrapper">
+                                <!-- 图标将由JS动态填充 -->
+                            </div>
+                            <div class="appearance-item-text">
+                                <span class="appearance-item-title">iMessage日间主题</span>
+                            </div>
+                            <div class="appearance-item-arrow">
+                                <svg t="1759061190252" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                    xmlns="http://www.w3.org/2000/svg" p-id="8595" width="15.5" height="16.5">
+                                    <path
+                                        d="M761.856 405.504l-255.68-170.432A128 128 0 0 0 307.2 341.568v340.864a128 128 0 0 0 199.008 106.496l255.648-170.432a128 128 0 0 0 0-212.992z"
+                                        p-id="8596" fill="#434343"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 自定义DIY -->
+                    <div class="appearance-section">
+                        <h3 class="appearance-section-title">自定义DIY</h3>
+                        <div class="appearance-plate">
+                            <div class="appearance-item-icon-wrapper" style="background-color: #383c3b">
+                                <svg t="1759740507623" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                    xmlns="http://www.w3.org/2000/svg" p-id="160563" width="30" height="30">
+                                    <path
+                                        d="M358.681 586.386s-90.968 49.4-94.488 126.827c-3.519 77.428-77.427 133.74-102.063 140.778s360.157 22.971 332.002-142.444l-135.45-125.16z m169.099 52.56c14.016 13.601 17.565 32.675 7.929 42.606-9.635 9.93-28.81 6.954-42.823-6.647l-92.767-88.518c-14.015-13.6-17.565-32.675-7.929-42.605 9.636-9.93 28.81-6.955 42.824 6.646l92.766 88.518z m321.734-465.083c-25.144-17.055-47.741-1.763-57.477 3.805-29.097 19.485-237.243 221.77-327.69 315.194-11.105 14.8-18.59 26.294 34.663 79.546 44.95 44.95 65.896 42.012 88.66 22.603 37.906-37.906 199.299-262.926 258.92-348.713 9.792-14.092 29.851-54.17 2.924-72.435z"
+                                        fill="#ffffff" p-id="160564"></path>
+                                </svg>
+                            </div>
+                            <div class="appearance-item-text">
+                                <span class="appearance-item-title">自定义主题</span>
+                                <span class="appearance-item-subtitle">可自由打造的个性化界面</span>
+                            </div>
+                            <div class="appearance-item-arrow">
+                                <svg t="1759061190252" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                    xmlns="http://www.w3.org/2000/svg" p-id="8595" width="15.5" height="16.5">
+                                    <path
+                                        d="M761.856 405.504l-255.68-170.432A128 128 0 0 0 307.2 341.568v340.864a128 128 0 0 0 199.008 106.496l255.648-170.432a128 128 0 0 0 0-212.992z"
+                                        p-id="8596" fill="#434343"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =================================================================== -->
+            <!-- 【全新】更换主题页面 -->
+            <!-- =================================================================== -->
+            <div id="theme-change-screen" class="screen">
+                <div class="header">
+                    <button class="header-icon" data-target="appearance-style-screen">
+                        <svg id="back-arrow-icon" viewBox="0 0 1024 1024" width="18" height="18" version="1.1"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M723.413333 895.701333c-9.6 0-19.328-3.2-27.434666-9.6l-423.765334-340.906666a43.733333 43.733333 0 0 1 0-68.096l421.973334-339.114667a43.690667 43.690667 0 0 1 54.698666 68.096L369.28 511.146667l381.525333 306.901333a43.690667 43.690667 0 0 1-27.392 77.696z"
+                                fill="#515151"></path>
+                        </svg>
+                    </button>
+                    <h1>更换主题</h1>
+                    <div style="width: 44px;"></div>
+                </div>
+                <div class="form-container" id="theme-change-container">
+                    <!-- 当前选中的主题将由JS动态渲染到这里 -->
+                    <div id="current-theme-display-wrapper"></div>
+                    <!-- 其他可选主题将由JS动态渲染到这里 -->
+                    <div id="other-themes-list-wrapper"></div>
+                </div>
+            </div>
+
+            <!-- =================================================================== -->
             <!-- 【全新 V1.69】情侣关系邀请弹窗 -->
             <!-- =================================================================== -->
             <div class="modal-overlay" id="couple-invite-modal">
@@ -9873,6 +11047,7 @@
             </div>
         </div>
     </div>
+
 
 
     <!-- =================================================================== -->
@@ -10484,6 +11659,51 @@
                 });
             }
         };
+
+        // ===================================================================
+        // 【全新】主题切换核心功能
+        // ===================================================================
+        const themes = [
+            { id: 'imessage-day', name: 'iMessage日间主题', className: '' },
+            { id: 'imessage-dark', name: 'iMessage暗黑主题', className: 'theme-dark' },
+            { id: 'wechat', name: '仿微信主题', className: 'theme-wechat' },
+            // ... 未来可以在这里添加 ins风, pop主题等
+        ];
+        let currentThemeId = 'imessage-day'; // 默认主题
+
+        /**
+         * 应用指定的主题
+         * @param {string} themeId - 要应用的主题ID
+         */
+        async function applyTheme(themeId) {
+            const theme = themes.find(t => t.id === themeId);
+            if (!theme) return;
+
+            currentThemeId = themeId;
+            await db.set('currentTheme', themeId); // 保存用户的选择
+
+            // 移除所有可能存在的主题类名
+            themes.forEach(t => {
+                if (t.className) document.body.classList.remove(t.className);
+            });
+
+            // 如果新主题有关联的类名，则添加它
+            if (theme.className) {
+                document.body.classList.add(theme.className);
+            }
+        }
+
+        /**
+         * 加载并应用已保存的主题
+         */
+        async function loadAndApplyTheme() {
+            const savedThemeId = await db.get('currentTheme');
+            if (savedThemeId && themes.find(t => t.id === savedThemeId)) {
+                await applyTheme(savedThemeId);
+            } else {
+                await applyTheme('imessage-day'); // 如果没有保存或无效，则应用默认主题
+            }
+        }
         document.addEventListener('DOMContentLoaded', () => {
 
             // ===================================================================
@@ -11178,6 +12398,14 @@
             const meAvatarUploadInput = document.getElementById('me-avatar-upload-input');
             let mePageData = {}; // 用于存储“Me”页面的数据
             // --- 全局状态变量 (let) ---
+            let currentThemeId = 'imessage-day'; // 默认主题ID
+            const themes = [
+                { id: 'imessage-day', name: 'iMessage日间主题', iconBg: '#ffffff', iconFill: '#007AFF', className: '' },
+                { id: 'imessage-dark', name: 'iMessage暗黑主题', iconBg: '#242424', iconFill: '#303034', className: 'theme-dark' },
+                { id: 'wechat', name: '仿微信主题', iconGradient: 'linear-gradient(to bottom, #19f957, #16ee53, #0de24a)', iconFill: '#ffffff', className: 'theme-wechat' },
+                { id: 'ins', name: 'ins风主题', iconBg: '#383c3b', iconFill: '#ffe2f4', className: 'theme-ins' },
+                { id: 'pop', name: '仿pop主题', iconBg: '#feeff6', iconFill: '#fed9ec', className: 'theme-pop' }
+            ];
             let currentlyVisibleChatId = null; // 【【【核心新增】】】追踪当前正在屏幕上显示的聊天ID
             // --- 【V2.30】消息交互新增状态变量 ---
             let activeContextMenuMsgId = null; // 正在操作的消息ID
@@ -11466,16 +12694,35 @@
             // ===================================================================
             function formatMessageTime(timestamp) {
                 const date = new Date(timestamp);
-                return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-            }
+                const hours = date.getHours(); // 获取24小时制的小时 (0-23)
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const period = hours >= 12 ? 'PM' : 'AM';
 
+                // 按照您的要求 "17:21 PM" 格式
+                const hours24 = String(hours).padStart(2, '0');
+
+                return `${hours24}:${minutes} ${period}`;
+            }
+            /**
+             * 【【【全新】】】专用于格式化日期分隔符中的时间（不带AM/PM）
+             * @param {number} timestamp - 消息的时间戳
+             * @returns {string} - 格式化后的 "HH:MM" 字符串
+             */
+            function formatDateSeparatorTimeOnly(timestamp) {
+                const date = new Date(timestamp);
+                const hours = String(date.getHours()).padStart(2, '0'); // 24小时制
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                return `${hours}:${minutes}`;
+            }
             function formatDateSeparator(timestamp) {
                 const date = new Date(timestamp);
                 const today = new Date();
                 const yesterday = new Date();
                 yesterday.setDate(yesterday.getDate() - 1);
 
-                const time = formatMessageTime(timestamp);
+                // --- 【【【核心修改】】】 ---
+                // 调用我们刚刚创建的新函数，这个函数不带 AM/PM
+                const time = formatDateSeparatorTimeOnly(timestamp);
 
                 // Helper function to check if two dates are on the same day
                 const isSameDayCheck = (d1, d2) =>
@@ -13029,6 +14276,22 @@
                     }
 
                     chatContactName.textContent = chat.settings.aiName || chat.name;
+
+                    // 【【【全新：同步顶栏中间的AI头像】】】
+                    const headerAiAvatar = document.getElementById('chat-header-ai-avatar');
+                    if (headerAiAvatar) {
+                        const aiAvatarUrl = chat.settings.aiAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+                        headerAiAvatar.src = aiAvatarUrl;
+                    }
+
+                    // 【【【新增：同步右上角的用户头像】】】
+                    const headerAvatar = document.getElementById('header-user-avatar');
+                    if (headerAvatar) {
+                        const userAvatarUrl = chat.settings.userAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp'; // 使用一个默认头像
+                        headerAvatar.src = userAvatarUrl;
+                    }
+                    // 【【【新增结束】】】
+
                     renderMessages();
                     applyChatStyles();
                     showScreen('chat-interface-screen');
@@ -13102,7 +14365,9 @@
                 if (lastTimestamp === 0 || timeDiff > TEN_MINUTES) {
                     const dateSeparator = document.createElement('div');
                     dateSeparator.className = 'date-separator';
-                    dateSeparator.textContent = formatDateSeparator(msg.timestamp);
+                    // --- 【【【核心修改】】】 ---
+                    // 使用 innerHTML 将文本包裹在一个 span 标签内
+                    dateSeparator.innerHTML = `<span>${formatDateSeparator(msg.timestamp)}</span>`;
                     container.appendChild(dateSeparator);
                 }
                 // --- 时间戳逻辑结束 ---
@@ -13199,14 +14464,22 @@
                 checkmark.className = 'selection-checkmark';
                 checkmark.innerHTML = `<svg t="1758555701217" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="29525" width="9.2" height="9.2"><path d="M14.336 522.24c-4.096-4.096-4.096-12.288-2.048-16.384L61.44 438.272c4.096-4.096 10.24-6.144 14.336-2.048l280.576 215.04c10.24 6.144 24.576 6.144 32.768 0L948.224 174.08c4.096-4.096 12.288-4.096 16.384 0l47.104 47.104c4.096 4.096 4.096 10.24 0 14.336L389.12 845.824c-8.192 8.192-22.528 8.192-30.72 0L14.336 522.24z m0 0" p-id="29526" fill="#ffffff"></path></svg>`;
 
+                // --- 【【【核心修改】】】 ---
+                // 1. 创建一个新的容器来包裹气泡和时间戳
+                const contentWrapper = document.createElement('div');
+                contentWrapper.className = 'message-content-wrapper';
+
+                // 2. 把气泡和时间戳放进这个新容器
+                contentWrapper.appendChild(messageContentElement);
+                contentWrapper.appendChild(timestamp);
+
+                // 3. 根据角色，将头像和新的内容容器正确地放入主消息行
                 if (msg.role === 'user') {
-                    messageWrapper.appendChild(timestamp);
-                    messageWrapper.appendChild(messageContentElement);
-                    messageWrapper.appendChild(avatar);
+                    messageWrapper.appendChild(contentWrapper); // 内容在左
+                    messageWrapper.appendChild(avatar);         // 头像在右
                 } else {
-                    messageWrapper.appendChild(avatar);
-                    messageWrapper.appendChild(messageContentElement);
-                    messageWrapper.appendChild(timestamp);
+                    messageWrapper.appendChild(avatar);         // 头像在左
+                    messageWrapper.appendChild(contentWrapper); // 内容在右
                 }
 
                 messageWrapper.appendChild(checkmark);
@@ -14375,15 +15648,29 @@
                     if (chat) {
                         if (currentAvatarUploadTarget === 'ai') {
                             chat.settings.aiAvatar = imageUrl;
-                            // 【核心修复】同时更新两个页面的头像
+                            // 【核心修复】同时更新三个页面的头像
                             aiSettingsAvatar.src = imageUrl; // 更新聊天设置页的
                             aiInfoAvatar.src = imageUrl;     // 更新对方信息页的
+
+                            // --- 【【【核心修复：在这里同步更新聊天顶栏中间的头像】】】 ---
+                            const headerAiAvatar = document.getElementById('chat-header-ai-avatar');
+                            if (headerAiAvatar) {
+                                headerAiAvatar.src = imageUrl;
+                            }
+                            // --- 【【【修复结束】】】 ---
+
                             updateCoupleSpaceUI(); // 【核心新增】立即刷新情侣空间主界面
                         } else if (currentAvatarUploadTarget === 'user') {
                             chat.settings.userAvatar = imageUrl;
                             // 【核心修复】同时更新两个页面的头像
                             userSettingsAvatar.src = imageUrl; // 更新聊天设置页的
                             myInfoAvatar.src = imageUrl;       // 更新我的信息页的
+
+                            // 【【【新增：同步更新聊天界面顶栏的头像】】】
+                            const headerAvatar = document.getElementById('header-user-avatar');
+                            if (headerAvatar) {
+                                headerAvatar.src = imageUrl;
+                            }
                         }
                         saveChats();
                         renderContactList();
@@ -17101,6 +18388,124 @@
                 return [{ type: 'text', content: jsonString }];
             }
 
+
+            // ===================================================================
+            // 【全新】个性装扮与主题切换核心功能函数
+            // ===================================================================
+
+            /**
+             * 渲染“个性装扮”页面
+             */
+            function renderAppearanceStyleScreen() {
+                const currentTheme = themes.find(t => t.id === currentThemeId);
+                if (!currentTheme) return;
+
+                const iconWrapper = document.querySelector('#current-theme-item .appearance-item-icon-wrapper');
+                const titleSpan = document.querySelector('#current-theme-item .appearance-item-title');
+
+                titleSpan.textContent = currentTheme.name;
+
+                // --- 动态创建主题封面图标 ---
+                let iconStyle = '';
+                if (currentTheme.iconGradient) {
+                    iconStyle = `background: ${currentTheme.iconGradient};`;
+                } else {
+                    // 【核心修复】在这里添加了和“更换主题”页面一样的描边判断逻辑
+                    const borderStyle = (currentTheme.iconBg === '#ffffff') ? 'border: 1.7px solid #f0f0f0;' : '';
+                    iconStyle = `background-color: ${currentTheme.iconBg}; ${borderStyle}`;
+                }
+
+                // 动态生成包含SVG的HTML，并应用计算出的样式
+                iconWrapper.innerHTML = `
+                    <div class="theme-item-icon-wrapper" style="${iconStyle}">
+                        <svg t="1759739878868" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="159129" width="25" height="25">
+                            <path d="M944.12 345.193333c-23.773333-50.853333-57.76-96.486667-101.026667-135.626666-43.093333-39-93.266667-69.606667-149.093333-90.973334C636.333333 96.526667 575.093333 85.333333 512 85.333333s-124.333333 11.193333-182 33.26c-55.82 21.366667-106 52-149.093333 90.973334-43.26 39.14-77.246667 84.773333-101.02 135.626666A391.093333 391.093333 0 0 0 42.666667 512c0 119.68 54.806667 232.9 151.1 313.64-30.666667 40.166667-74.926667 76.58-140.74 116.066667A21.333333 21.333333 0 0 0 64 981.333333c64.953333 0 124.666667-6.46 177.486667-19.206666 45.026667-10.86 85.226667-26.313333 119.68-46A511.086667 511.086667 0 0 0 512 938.666667c63.093333 0 124.333333-11.193333 182-33.26 55.82-21.333333 106-52 149.086667-90.973334 43.266667-39.14 77.253333-84.773333 101.026666-135.626666a392.46 392.46 0 0 0 0-333.613334z" fill="${currentTheme.iconFill}" p-id="159130"></path>
+                        </svg>
+                    </div>
+                `;
+            }
+
+            /**
+             * 渲染“更换主题”页面
+             */
+            function renderThemeChangeScreen() {
+                const currentThemeWrapper = document.getElementById('current-theme-display-wrapper');
+                const otherThemesWrapper = document.getElementById('other-themes-list-wrapper');
+
+                currentThemeWrapper.innerHTML = '';
+                otherThemesWrapper.innerHTML = '';
+
+                themes.forEach(theme => {
+                    let iconStyle = '';
+                    if (theme.iconGradient) {
+                        iconStyle = `background: ${theme.iconGradient};`;
+                    } else {
+                        // 为白色背景的主题添加一个细边框以示区分
+                        const borderStyle = (theme.iconBg === '#ffffff') ? 'border: 1.7px solid #f0f0f0;' : '';
+                        iconStyle = `background-color: ${theme.iconBg}; ${borderStyle}`;
+                    }
+
+                    const themeItemHTML = `
+                        <div class="theme-item" data-theme-id="${theme.id}">
+                            <div class="theme-item-icon-wrapper" style="${iconStyle}">
+                                <svg t="1759739878868" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="159129" width="25" height="25">
+                                    <path d="M944.12 345.193333c-23.773333-50.853333-57.76-96.486667-101.026667-135.626666-43.093333-39-93.266667-69.606667-149.093333-90.973334C636.333333 96.526667 575.093333 85.333333 512 85.333333s-124.333333 11.193333-182 33.26c-55.82 21.366667-106 52-149.093333 90.973334-43.26 39.14-77.246667 84.773333-101.02 135.626666A391.093333 391.093333 0 0 0 42.666667 512c0 119.68 54.806667 232.9 151.1 313.64-30.666667 40.166667-74.926667 76.58-140.74 116.066667A21.333333 21.333333 0 0 0 64 981.333333c64.953333 0 124.666667-6.46 177.486667-19.206666 45.026667-10.86 85.226667-26.313333 119.68-46A511.086667 511.086667 0 0 0 512 938.666667c63.093333 0 124.333333-11.193333 182-33.26 55.82-21.333333 106-52 149.086667-90.973334 43.266667-39.14 77.253333-84.773333 101.026666-135.626666a392.46 392.46 0 0 0 0-333.613334z" fill="${theme.iconFill}" p-id="159130"></path>
+                                </svg>
+                            </div>
+                            <span class="theme-item-title">${theme.name}</span>
+                        </div>
+                    `;
+
+                    if (theme.id === currentThemeId) {
+                        currentThemeWrapper.innerHTML = themeItemHTML;
+                    } else {
+                        otherThemesWrapper.innerHTML += themeItemHTML;
+                    }
+                });
+
+                // 为“其他主题”列表中的每一项添加点击事件
+                otherThemesWrapper.querySelectorAll('.theme-item').forEach(item => {
+                    item.addEventListener('click', async () => { // 将函数改为 async
+                        const themeId = item.dataset.themeId;
+                        await applyTheme(themeId); // 等待主题应用完成
+                        // 选择后，返回到“个性装扮”页面，并刷新该页面的显示
+                        renderAppearanceStyleScreen();
+                        showScreen('appearance-style-screen');
+                    });
+                });
+            }
+
+            /**
+             * 应用主题
+             * @param {string} themeId - 要应用的主题ID
+             */
+            async function applyTheme(themeId) {
+                const theme = themes.find(t => t.id === themeId);
+                if (!theme) return;
+
+                currentThemeId = themeId; // 更新当前主题ID
+                await db.set('currentTheme', themeId); // 保存到数据库
+
+                // 移除所有可能存在的主题类
+                document.body.classList.remove('theme-dark', 'theme-wechat', 'theme-ins', 'theme-pop');
+
+                // 如果新主题有关联的类名，则添加它
+                if (theme.className) {
+                    document.body.classList.add(theme.className);
+                }
+            }
+
+            /**
+             * 加载并应用已保存的主题
+             */
+            async function loadAndApplyTheme() {
+                const savedThemeId = await db.get('currentTheme');
+                if (savedThemeId && themes.find(t => t.id === savedThemeId)) {
+                    await applyTheme(savedThemeId);
+                } else {
+                    await applyTheme('imessage-day'); // 如果没有保存的或无效的，则应用默认主题
+                }
+            }
             // --- 初始化 (V1.92 最终性能优化版) ---
             async function initializeApp() {
                 // 【第一步：缓存】在所有操作开始前，一次性查找并缓存所有图标元素及其默认SVG
@@ -17133,6 +18538,7 @@
                 await loadFontSettings();
                 await loadPresets(); // 【新增】加载世界书数据
                 await loadPhoneFrameSetting();
+                await loadAndApplyTheme(); // 【【【新增】】】加载并应用保存的主题
                 await loadMePageData(); // 【【【全新】】】 加载“Me”页面的数据
                 await loadLockScreenSettings(); // 【【【新增】】】 加载锁屏数据
                 applyMePageData(); // 【【【全新】】】 将加载的数据应用到UI上
@@ -17204,9 +18610,48 @@
                         openChat(chatIdToOpen);
                     }
                 });
+
+
             }
 
+            // ===================================================================
+            // 【全新】个性装扮与主题切换功能事件监听 (修正版)
+            // ===================================================================
+            const gotoAppearanceStyleBtn = document.getElementById('goto-appearance-style-btn');
+            const currentThemeItem = document.getElementById('current-theme-item');
+            const backFromAppearanceStyleBtn = document.getElementById('back-from-appearance-style-btn');
 
+            // 从"Me"页面跳转到"个性装扮"页面
+            if (gotoAppearanceStyleBtn) {
+                gotoAppearanceStyleBtn.addEventListener('click', () => {
+                    renderAppearanceStyleScreen();
+                    showScreen('appearance-style-screen');
+                });
+            }
+
+            // 从"个性装扮"页面跳转到"更换主题"页面
+            if (currentThemeItem) {
+                currentThemeItem.addEventListener('click', () => {
+                    renderThemeChangeScreen();
+                    showScreen('theme-change-screen');
+                });
+            }
+
+            // 【关键修正】为“个性装扮”页面的返回按钮添加专属返回逻辑
+            if (backFromAppearanceStyleBtn) {
+                backFromAppearanceStyleBtn.addEventListener('click', () => {
+                    // 1. 找到并模拟点击底部导航的 "Me" 按钮
+                    const meNavItem = document.querySelector('.nav-item[data-page="me"]');
+                    if (meNavItem) {
+                        meNavItem.click(); // 这会触发现有的导航栏逻辑，自动切换到Me页面
+                    }
+                    // 2. 显示包含 "Me" 页面的 chat-list-screen
+                    showScreen('chat-list-screen');
+                });
+            }
+
+            // 加载已保存的主题
+            loadAndApplyTheme();
 
             // ===================================================================
             // 【【【全新】】】发布动态与渲染核心功能
