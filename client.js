@@ -28,7 +28,7 @@ async function getVapidKey() {
     // 2. 如果本地没有（说明是用户第一次订阅），才通过网络去获取
     console.log('本地无缓存，正在从服务器获取VAPID公钥...');
     try {
-        const response = await fetch(`${window.BACKEND_URL}/vapid-public-key`);
+        const response = await fetch(`${window.BACKEND_URL}/push-init-info`);
         if (!response.ok) throw new Error(`服务器响应错误: ${response.status}`);
         const key = await response.text();
         vapidPublicKey = key;

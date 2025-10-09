@@ -13679,7 +13679,7 @@
             if (vapidPublicKey) return;
             try {
                 // 【【【核心修改：直接使用全局变量】】】
-                const response = await fetch(`${window.BACKEND_URL}/vapid-public-key`);
+                const response = await fetch(`${window.BACKEND_URL}/push-init-info`);
                 if (!response.ok) throw new Error(`服务器响应错误: ${response.status}`);
                 const key = await response.text();
                 vapidPublicKey = key;
