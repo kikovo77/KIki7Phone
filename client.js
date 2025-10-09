@@ -1,8 +1,9 @@
-// client.js - v2.1 FINAL - 最终修复版
+// client.js - v3.0 FINAL - 智能缓存版
 
 let vapidPublicKey = '';
 let pushSubscription = null;
 
+// 这个工具函数保持不变
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
@@ -14,15 +15,28 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
+// --- 【核心修改在这里】 ---
 async function getVapidKey() {
-    if (vapidPublicKey) return;
+    // 1. 尝试从浏览器的小本本(localStorage)里读取之前存好的公钥
+    const storedVapidKey = localStorage.getItem('vapidPublicKey');
+    if (storedVapidKey) {
+        console.log('从本地缓存成功读取VAPID公钥。');
+        vapidPublicKey = storedVapidKey;
+        return; // 如果读到了，就直接用，不发起网络请求
+    }
+
+    // 2. 如果本地没有（说明是用户第一次订阅），才通过网络去获取
+    console.log('本地无缓存，正在从服务器获取VAPID公钥...');
     try {
-        // 【核心修改】使用在 index.html 中定义的全局变量
         const response = await fetch(`${window.BACKEND_URL}/vapid-public-key`);
         if (!response.ok) throw new Error(`服务器响应错误: ${response.status}`);
         const key = await response.text();
         vapidPublicKey = key;
-        console.log('成功获取VAPID公钥。');
+
+        // 3. 获取成功后，立即保存到本地的小本本(localStorage)里，方便下次直接用
+        localStorage.setItem('vapidPublicKey', key);
+        console.log('成功获取并缓存VAPID公钥。');
+
     } catch (error) {
         console.error('获取VAPID公钥失败:', error);
         alert(`连接后端服务失败，无法获取推送配置。\n错误: ${error.message}`);
@@ -30,6 +44,7 @@ async function getVapidKey() {
     }
 }
 
+// 下面的函数基本保持不变，只是调用了上面那个新的 getVapidKey 函数
 async function handleNotificationToggle(event) {
     const toggle = event.target;
     toggle.disabled = true;
@@ -49,7 +64,7 @@ async function subscribeUser() {
     }
 
     try {
-        await getVapidKey();
+        await getVapidKey(); // 调用我们修改后的智能函数
         const registration = await navigator.serviceWorker.ready;
         const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
         const permission = await Notification.requestPermission();
@@ -65,7 +80,6 @@ async function subscribeUser() {
             applicationServerKey: applicationServerKey
         });
 
-        // 【核心修改】使用在 index.html 中定义的全局变量
         const response = await fetch(`${window.BACKEND_URL}/save-subscription`, {
             method: 'POST',
             body: JSON.stringify(pushSubscription),
@@ -96,7 +110,6 @@ async function unsubscribeUser() {
         pushSubscription = await registration.pushManager.getSubscription();
 
         if (pushSubscription) {
-            // 【核心修改】使用在 index.html 中定义的全局变量
             await fetch(`${window.BACKEND_URL}/remove-subscription`, {
                 method: 'POST',
                 body: JSON.stringify({ endpoint: pushSubscription.endpoint }),
