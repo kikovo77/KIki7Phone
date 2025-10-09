@@ -13676,8 +13676,8 @@
         }
 
         async function getVapidKey() {
-            // 1. 我们已经知道了正确的公钥，将它作为“真理”直接定义在这里
-            const KNOWN_VAPID_PUBLIC_KEY = "BFVF_o36Q0I0Vj8BvSz0g00WDiqMYs9Jyf90-gvna592QzWNxS115WNWRHg4VjeFr61Ofa-BPATMOxKf4e1H74";
+            // 1. 使用你 server.js 文件中定义的、100% 正确的公钥
+            const KNOWN_VAPID_PUBLIC_KEY = "BFVF_o36Q0I0Vj8BvSzOg00WDiqMYs9Jyf9O-gvna592QzwNxs1I5WNWRHg4VjeFr61qOfa-BPATMOxKf4e1H74";
 
             // 2. 将这个“真理”赋值给全局变量
             vapidPublicKey = KNOWN_VAPID_PUBLIC_KEY;
