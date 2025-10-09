@@ -1,9 +1,8 @@
-// client.js - v3.0 FINAL - 智能缓存版
+// client.js - v5.0 FINAL - 决定版 (硬编码VAPID密钥)
 
 let vapidPublicKey = '';
 let pushSubscription = null;
 
-// 这个工具函数保持不变
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
@@ -15,36 +14,24 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
-// --- 【核心修改在这里】 ---
+// --- 【核心修改】 ---
+// 这个函数不再进行任何网络请求，直接使用已知的正确公钥。
 async function getVapidKey() {
-    // 1. 尝试从浏览器的小本本(localStorage)里读取之前存好的公钥
-    const storedVapidKey = localStorage.getItem('vapidPublicKey');
-    if (storedVapidKey) {
-        console.log('从本地缓存成功读取VAPID公钥。');
-        vapidPublicKey = storedVapidKey;
-        return; // 如果读到了，就直接用，不发起网络请求
-    }
+    // 1. 我们已经通过 curl 知道了正确的公钥，将它作为“真理”直接定义在这里
+    const KNOWN_VAPID_PUBLIC_KEY = "BFVF_o36Q0I0Vj8BvSz0g00WDiqMYs9Jyf90-gvna592QzWNxS115WNWRHg4VjeFr61Ofa-BPATMOxKf4e1H74";
 
-    // 2. 如果本地没有（说明是用户第一次订阅），才通过网络去获取
-    console.log('本地无缓存，正在从服务器获取VAPID公钥...');
-    try {
-        const response = await fetch(`${window.BACKEND_URL}/push-init-info`);
-        if (!response.ok) throw new Error(`服务器响应错误: ${response.status}`);
-        const key = await response.text();
-        vapidPublicKey = key;
+    // 2. 将这个“真理”赋值给全局变量
+    vapidPublicKey = KNOWN_VAPID_PUBLIC_KEY;
 
-        // 3. 获取成功后，立即保存到本地的小本本(localStorage)里，方便下次直接用
-        localStorage.setItem('vapidPublicKey', key);
-        console.log('成功获取并缓存VAPID公钥。');
+    // 3. 同时，为了遵循最佳实践，我们把它存入本地，即使以后代码变了也能用
+    localStorage.setItem('vapidPublicKey', KNOWN_VAPID_PUBLIC_KEY);
 
-    } catch (error) {
-        console.error('获取VAPID公钥失败:', error);
-        alert(`连接后端服务失败，无法获取推送配置。\n错误: ${error.message}`);
-        throw error;
-    }
+    console.log('已从代码内置的VAPID公钥完成初始化。');
+
+    // 4. 直接返回，函数结束。没有任何失败的可能。
+    return;
 }
 
-// 下面的函数基本保持不变，只是调用了上面那个新的 getVapidKey 函数
 async function handleNotificationToggle(event) {
     const toggle = event.target;
     toggle.disabled = true;
@@ -64,7 +51,7 @@ async function subscribeUser() {
     }
 
     try {
-        await getVapidKey(); // 调用我们修改后的智能函数
+        await getVapidKey(); // 调用我们修改后的“绝对成功”的函数
         const registration = await navigator.serviceWorker.ready;
         const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
         const permission = await Notification.requestPermission();

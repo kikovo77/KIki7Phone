@@ -13676,19 +13676,19 @@
         }
 
         async function getVapidKey() {
-            if (vapidPublicKey) return;
-            try {
-                // 【【【核心修改：直接使用全局变量】】】
-                const response = await fetch(`${window.BACKEND_URL}/push-init-info`);
-                if (!response.ok) throw new Error(`服务器响应错误: ${response.status}`);
-                const key = await response.text();
-                vapidPublicKey = key;
-                console.log('成功获取VAPID公钥。');
-            } catch (error) {
-                console.error('获取VAPID公钥失败:', error);
-                alert(`连接后端服务失败，无法获取推送配置。\n错误: ${error.message}`);
-                throw error;
-            }
+            // 1. 我们已经知道了正确的公钥，将它作为“真理”直接定义在这里
+            const KNOWN_VAPID_PUBLIC_KEY = "BFVF_o36Q0I0Vj8BvSz0g00WDiqMYs9Jyf90-gvna592QzWNxS115WNWRHg4VjeFr61Ofa-BPATMOxKf4e1H74";
+
+            // 2. 将这个“真理”赋值给全局变量
+            vapidPublicKey = KNOWN_VAPID_PUBLIC_KEY;
+
+            // 3. 同时，为了遵循最佳实践，我们把它存入本地，即使以后代码变了也能用
+            localStorage.setItem('vapidPublicKey', KNOWN_VAPID_PUBLIC_KEY);
+
+            console.log('已从代码内置的VAPID公钥完成初始化。');
+
+            // 4. 直接返回，函数结束。没有任何失败的可能。
+            return;
         }
 
         async function handleNotificationToggle(event) {
