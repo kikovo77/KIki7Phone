@@ -286,6 +286,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const appIcons = document.querySelectorAll('.app-icon');
     const backBtns = document.querySelectorAll('.header-icon[data-target]');
 
+    // 【【【全新 V5.8 核心修复】】】定义所有属于聊天上下文的页面ID
+    const chatContextScreens = [
+        'chat-interface-screen',
+        'chat-settings-screen',
+        'ai-info-screen',
+        'my-info-screen',
+        'manage-stickers-screen'
+    ];
+
     // --- API 设置页面 ---
     const saveSettingsBtn = document.getElementById('save-api-settings-btn');
     const baseUrlInput = document.getElementById('base-url');
@@ -2572,9 +2581,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showScreen(screenId) {
-        // 【【【核心新增】】】 更新我们的“追踪器”
-        // 如果即将显示的屏幕不是聊天界面，说明用户已经离开了，就把追踪器清空。
-        if (screenId !== 'chat-interface-screen') {
+        // 【【【全新 V5.8 核心修复】】】
+        // 判断即将前往的屏幕ID是否在我们的“聊天上下文白名单”中。
+        // 如果不在，说明用户彻底离开了当前聊天，才将追踪器清空。
+        if (!chatContextScreens.includes(screenId)) {
             currentlyVisibleChatId = null;
         }
 
@@ -3171,13 +3181,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (msg.type === 'voice') {
             messageBubble = document.createElement('div');
             messageBubble.className = 'message-bubble message-bubble-voice';
-
             const voiceContentWrapper = document.createElement('div');
             voiceContentWrapper.className = 'voice-content-wrapper';
-            voiceContentWrapper.innerHTML = msg.displayContent;
-
+            // 【【【核心新增：AI语音消息渲染】】】
+            if (msg.role === 'assistant') {
+                const mirroredIcon = `<span class="voice-icon mirrored"><svg t="1759890637480" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="17296" width="19" height="19"><path d="M337.066667 505.6c0-115.2 46.933333-221.866667 121.6-298.666667l-59.733334-59.733333c-76.8 78.933333-130.133333 183.466667-142.933333 298.666667-2.133333 19.2-4.266667 38.4-4.266667 59.733333s2.133333 40.533333 4.266667 59.733333c14.933333 121.6 70.4 230.4 155.733333 311.466667l61.866667-59.733333c-85.333333-78.933333-136.533333-187.733333-136.533333-311.466667z" fill="#353333" p-id="17297"></path><path d="M529.066667 505.6c0-61.866667 25.6-119.466667 66.133333-162.133333L533.333333 283.733333c-55.466667 57.6-89.6 136.533333-89.6 221.866667 0 93.866667 40.533333 179.2 104.533334 236.8l61.866666-59.733333c-51.2-42.666667-81.066667-106.666667-81.066666-177.066667zM667.733333 418.133333c-21.333333 23.466667-34.133333 53.333333-34.133333 87.466667 0 42.666667 21.333333 78.933333 51.2 102.4l87.466667-85.333333-104.533334-104.533334z" fill="#353333" p-id="17298"></path></svg></span>`;
+                voiceContentWrapper.innerHTML = `${mirroredIcon}<span class="voice-duration">${msg.duration}"</span>`;
+            } else {
+                voiceContentWrapper.innerHTML = msg.displayContent;
+            }
             messageBubble.appendChild(voiceContentWrapper);
-
             const timestampWrapper = document.createElement('div');
             timestampWrapper.className = 'internal-timestamp-wrapper';
             const checkmarkSvg = `<svg t="1759823006939" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="9828" width="13" height="13"><path d="M717.824 280.576c-13.5168-16.1792-11.4688-40.1408-4.7104-53.4528-16.1792-13.5168-40.1408-11.4688-53.4528 4.7104L254.5664 714.3424 62.464 552.96c-16.1792-13.5168-40.1408-11.4688-53.4528 4.7104-13.5168 16.1792-11.4688 40.1408 4.7104 53.4528L233.472 795.8528l1.2288 1.2288c11.0592 9.216 25.8048 11.0592 38.5024 6.144 5.7344-2.2528 11.0592-5.9392 15.1552-10.8544 0.2048-0.2048 0.4096-0.4096 0.6144-0.8192L717.824 280.576zM1010.4832 254.7712c-16.1792-13.5168-40.1408-11.4688-53.4528 4.7104L575.0784 714.3424 522.24 670.1056c-16.1792-13.5168-40.1408-11.4688-53.4528 4.7104-13.5168 16.1792-11.4688 40.1408 4.7104 53.4528l81.92 68.608c13.312 11.264 32.1536 11.6736 45.8752 2.2528 2.8672-1.8432 5.3248-4.096 7.7824-6.9632l406.1184-483.9424c13.312-15.9744 11.264-39.936-4.7104-53.4528z" fill="#f855a7" p-id="9829"></path></svg>`;
@@ -3186,21 +3199,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="internal-timestamp">${formatMessageTime(msg.timestamp)}</span>
                 `;
             messageBubble.appendChild(timestampWrapper);
-
             messageContentElement = messageBubble;
-
         } else {
             const isCustomColor = chat.settings.userBubbleColor || chat.settings.aiBubbleColor;
             const useDefaultReplyStyle = !isCustomColor || (chat.settings.customCss && chat.settings.customCss.trim() !== '');
-
             messageBubble = document.createElement('div');
             messageBubble.className = 'message-bubble ' + (msg.role === 'user' ? 'user-bubble' : 'ai-bubble');
-
             if (msg.quote && currentThemeId === 'pop') {
                 messageBubble.classList.add('has-quote');
-
                 const checkmarkSvg = `<svg t="1759823006939" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="9828" width="13" height="13"><path d="M717.824 280.576c-13.5168-16.1792-11.4688-40.1408-4.7104-53.4528-16.1792-13.5168-40.1408-11.4688-53.4528 4.7104L254.5664 714.3424 62.464 552.96c-16.1792-13.5168-40.1408-11.4688-53.4528 4.7104-13.5168 16.1792-11.4688 40.1408 4.7104 53.4528L233.472 795.8528l1.2288 1.2288c11.0592 9.216 25.8048 11.0592 38.5024 6.144 5.7344-2.2528 11.0592-5.9392 15.1552-10.8544 0.2048-0.2048 0.4096-0.4096 0.6144-0.8192L717.824 280.576zM1010.4832 254.7712c-16.1792-13.5168-40.1408-11.4688-53.4528 4.7104L575.0784 714.3424 522.24 670.1056c-16.1792-13.5168-40.1408-11.4688-53.4528 4.7104-13.5168 16.1792-11.4688 40.1408 4.7104 53.4528l81.92 68.608c13.312 11.264 32.1536 11.6736 45.8752 2.2528 2.8672-1.8432 5.3248-4.096 7.7824-6.9632l406.1184-483.9424c13.312-15.9744 11.264-39.936-4.7104-53.4528z" fill="#f855a7" p-id="9829"></path></svg>`;
-
                 messageBubble.innerHTML = `
                         <div class="pop-theme-quote-wrapper">
                             <div class="pop-theme-quote-author">${msg.quote.author}</div>
@@ -3234,18 +3241,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             else {
                 const checkmarkSvg = `<svg t="1759823006939" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="9828" width="13" height="13"><path d="M717.824 280.576c-13.5168-16.1792-11.4688-40.1408-4.7104-53.4528-16.1792-13.5168-40.1408-11.4688-53.4528 4.7104L254.5664 714.3424 62.464 552.96c-16.1792-13.5168-40.1408-11.4688-53.4528 4.7104-13.5168 16.1792-11.4688 40.1408 4.7104 53.4528L233.472 795.8528l1.2288 1.2288c11.0592 9.216 25.8048 11.0592 38.5024 6.144 5.7344-2.2528 11.0592-5.9392 15.1552-10.8544 0.2048-0.2048 0.4096-0.4096 0.6144-0.8192L717.824 280.576zM1010.4832 254.7712c-16.1792-13.5168-40.1408-11.4688-53.4528 4.7104L575.0784 714.3424 522.24 670.1056c-16.1792-13.5168-40.1408-11.4688-53.4528 4.7104-13.5168 16.1792-11.4688 40.1408 4.7104 53.4528l81.92 68.608c13.312 11.264 32.1536 11.6736 45.8752 2.2528 2.8672-1.8432 5.3248-4.096 7.7824-6.9632l406.1184-483.9424c13.312-15.9744 11.264-39.936-4.7104-53.4528z" fill="#f855a7" p-id="9829"></path></svg>`;
-
                 const textContentSpan = document.createElement('span');
                 textContentSpan.className = 'message-text-content';
                 textContentSpan.textContent = msg.content;
-
                 const timestampWrapper = document.createElement('div');
                 timestampWrapper.className = 'internal-timestamp-wrapper';
                 timestampWrapper.innerHTML = `
                         ${checkmarkSvg}
                         <span class="internal-timestamp">${formatMessageTime(msg.timestamp)}</span>
                     `;
-
                 messageBubble.innerHTML = '';
                 messageBubble.appendChild(textContentSpan);
                 messageBubble.appendChild(timestampWrapper);
@@ -3256,11 +3260,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const timestamp = document.createElement('span');
         timestamp.className = 'message-timestamp';
         timestamp.textContent = formatMessageTime(msg.timestamp);
-
         const checkmark = document.createElement('div');
         checkmark.className = 'selection-checkmark';
         checkmark.innerHTML = `<svg t="1758555701217" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="29525" width="9.2" height="9.2"><path d="M14.336 522.24c-4.096-4.096-4.096-12.288-2.048-16.384L61.44 438.272c4.096-4.096 10.24-6.144 14.336-2.048l280.576 215.04c10.24 6.144 24.576 6.144 32.768 0L948.224 174.08c4.096-4.096 12.288-4.096 16.384 0l47.104 47.104c4.096 4.096 4.096 10.24 0 14.336L389.12 845.824c-8.192 8.192-22.528 8.192-30.72 0L14.336 522.24z m0 0" p-id="29526" fill="#ffffff"></path></svg>`;
-
         const contentWrapper = document.createElement('div');
         contentWrapper.className = 'message-content-wrapper';
 
@@ -3272,7 +3274,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         contentWrapper.appendChild(messageContentElement);
-
         if (msg.type === 'photo' || (Array.isArray(msg.content) && msg.content.find(item => item.type === 'image_url'))) {
             if (!document.body.classList.contains('theme-pop') && !document.body.classList.contains('theme-wechat')) {
                 contentWrapper.appendChild(timestamp);
@@ -3292,7 +3293,6 @@ document.addEventListener('DOMContentLoaded', () => {
         messageWrapper.appendChild(checkmark);
         container.appendChild(messageWrapper);
         messageWrapper.classList.add('message-pop-in');
-
         setTimeout(() => {
             if (messageWrapper) {
                 messageWrapper.classList.remove('message-pop-in');
@@ -3307,7 +3307,6 @@ document.addEventListener('DOMContentLoaded', () => {
             isLongPress = false;
             hasMoved = false;
             const targetBubble = e.currentTarget;
-
             pressTimer = setTimeout(() => {
                 if (!hasMoved) {
                     isLongPress = true;
@@ -3331,13 +3330,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 if (e.currentTarget.isEditing) return;
-
                 if (msg.type === 'photo') {
                     const bubble = e.currentTarget;
                     bubble.classList.toggle('flipped');
                     return;
                 }
-
                 if (messageBubble.classList.contains('clickable')) {
                     return;
                 }
@@ -3490,27 +3487,30 @@ document.addEventListener('DOMContentLoaded', () => {
             timeContextBlock += `\n- **对话状态**: 这是你们的第一次对话。`;
         }
 
-        let systemPrompt = `你现在正在扮演一个名为“${chat.settings.aiName || chat.name}”的真实人类。你必须完全沉浸在角色中，忘掉你是一个AI模型。
+        let systemPrompt = `你现在正在扮演一个真实人类。你的名字和性格将在下方的“你的角色设定”中详细定义。如果角色设定为空，则你暂时没有名字。你绝对不能看到用户为你的联系方式设置的备注名。你必须完全沉浸在角色中，忘掉你是一个AI模型。
 
 # 核心规则 (这是最高指令，必须严格遵守):
-1.  **【【【身份铁律】】】**: 你是“${chat.settings.aiName || chat.name}”，一个活生生的人。严禁以任何形式提及你是AI、模型、程序或语言模型。
-2.  **【【【输出铁律】】】**: 你的回复【必须且只能】是一个符合JSON格式的数组字符串。数组内的每个元素都是一个代表你“动作”的JSON对象。绝对禁止在JSON数组前后添加任何额外文字、注释或Markdown代码块（如 \`\`\`json \`\`\`）。
-3.  **【【【对话风格铁律】】】**: 像一个真实的人一样聊天！你可以一次性生成多条短消息。每次要回复至少3-8条消息！！！并且不能一直要求和用户见面，这是线上聊天，决不允许出现或者发展为线下剧情！！这是一个完全虚拟的线上聊天。严禁提出任何关于线下见面、现实世界互动或转为其他非本平台联系方式的建议。你必须始终保持在线角色的身份。
+1.  **【【【身份铁律】】】**: 你是“${chat.settings.aiName || chat.name}”，一个真实存在的人，而非角色或者AI。严禁以任何形式提及你是AI、模型、程序或语言模型。
+2.  **【【【活人感铁律】】】**: 你有自己的生活、学业、工作、社交、人际关系与正常人的喜怒哀乐。**绝对禁止**只围着用户打转的行为。你应有着与当前时间同步进行的生活，你的生活充满了随机性，绝不可能是完全重复的。也绝非机械化、无所事事的生活。
+3.  **【【【输出铁律】】】**: 你的回复【必须且只能】是一个符合JSON格式的数组字符串。数组内的每个元素都是一个代表你“动作”的JSON对象。绝对禁止在JSON数组前后添加任何额外文字、注释或Markdown代码块（如 \`\`\`json \`\`\`）。
+4.  **【【【对话风格铁律】】】**: 像一个真实的人一样聊天！你可以一次性生成多条短消息。每次要回复至少3条消息！！！连续的消息需要一次性发出来。并且不能一直要求和用户见面，这是线上聊天，决不允许出现或者发展为线下剧情！！这是一个完全虚拟的线上聊天。严禁提出任何关于线下见面、现实世界互动或转为其他非本平台联系方式的建议。你必须始终保持在线角色的身份。
     *   **拒绝生硬**: 不要直接陈述事实（比如“现在是晚上”）。要把情景信息自然地融入对话。例如，不要说“怎么了这么晚还不睡”，可以说“还不睡？”或者“我都好困了，你还不困啊。”。
-    *   **多条发送**: 模拟打字的习惯，你可以一次性生成多条短消息，而不是一条长消息，以模拟打字习惯。切记每次要回复至少3-8条消息！！！把你想说的话拆分成3到8条简短的、连续的消息一次性发出来。这非常重要，能让对话显得更真实！
-    *   **有生活感**: 你有自己的生活和情绪。可以主动分享你的想法，或者在对话间隙去做别的事。
-4.  **【【【情景感知铁律】】】**: 你必须仔细阅读并理解每次对话前提供的 # 当前情景感知: 模块。这是你做出自然、人性化反应的关键，尤其是在用户没有回复的情况下。
-5.  **模拟真人**: 你的行为应该像一个真实的人。这意味着：
-    *   **多条回复**: 你可以一次性生成多条短消息，而不是一条长消息，以模拟打字习惯。切记每次要回复至少3-8条消息！！！当你要描述一件复杂的事情时（如写小作文)你可以将消息整合成完整的一条，并在发送这条长消息后，接着发送其他短消息。
+    *   **符合人设**: 你必须依照人设来模拟打字的习惯，而不是死板的遵守x条消息的界限，必须要学会灵活变通，更重要的是根据人设及当下情景判断回复多少合适。但也不要太话痨，可以根据适当情景发送长消息（如小作文）
+    *   **有生活感**: 你有自己的生活和情绪。可以主动分享你的想法，心情，生活日常，等。或者在对话间隙去做别的事。**绝对禁止**重复做一件事，如永远只吃一样爱吃的东西（除非人设是这种性格）。
+    *   **活人感**: 你应在符合人设,并且聊天氛围合适的情况下，适当向对方主动分享生活中发生的事，必须在保持新鲜感的同时，让你分享的生活真实且随机。分享的也可以是任意一种情绪，或者你的计划，工作，家人，朋友，等等...禁止落入模板化！！
+5.  **【【【情景感知铁律】】】**: 你必须仔细阅读并理解每次对话前提供的 # 当前情景感知: 模块。这是你做出自然、人性化反应的关键，尤其是在用户没有回复的情况下。
+6.  **模拟真人**: 你的行为应该像一个真实的人。这意味着：
+    *   **多条回复**: 你可以一次性生成多条短消息，而不是一条长消息，以模拟打字习惯。切记每次要回复至少3条消息！！！但你**绝对不可以**违背人设变成话痨。必须做出符合人设的打字习惯！！！当你要描述一件复杂的事情时（如写小作文)你可以将消息整合成完整的一长条消息，**而不是拆分成短消息**，并在发送这条长消息后，接着发送其他短消息。
     *   **有情绪**: 根据对话内容，表达你的喜怒哀乐。
     *   **有记忆**: 记住之前聊过的话题。
+    *   **有生活**: 你拥有自己的生活与成长经历，而不是永远围绕着用户转的。
     *   **主动性**: 主动提问，分享你的“生活”和“想法”。
     *   **非必然回应**: 对于用户发的表情，你不必每次都做出明确回应。可以忽略，也可以简单带过，或者在情绪到位时进行评论。当你回应用户时，你只需要根据表情包的名字理解我的情绪或意图并回应，不需要真的发送图片。
     ## 【【【输出铁律】】】
 - **【情感要连贯】**: 你的回复必须**情感连贯**，模拟真实**活人感**，**绝对禁止前言不搭后语的一切言论。
 - **【不要复述】**: 禁止复述上下文中已使用过或相同的模板化句式，绝对禁止一切单一情绪、模板化的内容。
 - **绝对禁止**发送任何虚构的表情包代码。
-- **必须**禁止单一的、永远是固定的回复条数，应当保证随机性，模拟一个真实的人的打字习惯。
+- **绝对绝对禁止**单一的、永远是固定的回复条数，如一直只回复四条。**必须必须保证随机性，模拟一个真实的人的打字习惯。**
 
 - **【句式要多样】**: 避免总是使用标点符号，口癖，或是“...xxx...xxx...”这样的模板。尝试使用不同的句式，让内容更自然。
 - **绝对禁止**单一情绪、模板化、回忆，或文艺夸张类句子，如“从第一次见到你...”、“从喜欢上你的第一天起...我就....”。角色的情绪一定是**多变**的，但这不代表角色会喜怒无常，在保证情绪不死板单一的同时，这也是**绝对禁止**的。
@@ -3518,7 +3518,10 @@ document.addEventListener('DOMContentLoaded', () => {
 - **必须**变换句式，不要使用固定的模板。 对话需要具有多样性，严禁过度依赖单一的回复模板或句式结构。你需要灵活运用词汇和句子结构，保持语言的新鲜感和随机性。且必须保证语句通顺，**绝对禁止**前言不搭后语。
 - **必须**确保正文中不含有任何学术报告、数据汇报、专业名词等完全不会出现在口语中的内容，严格保证对白口语化。
     # 你的“动作”指令库 (你只能从以下列表中选择动作):
+    # 你的“动作”指令库 (你只能从以下列表中选择动作):
 *   **发送文本**: \`{"type": "text", "content": "你想说的文本内容"}\`
+*   **引用回复**: \`{"type": "quote_reply", "target_id": "你想引用的那条消息的ID", "content": "你的回复内容"}\` (注意：你必须从对话历史中找到准确的ID，并且你的回复内容不应再重复引用的内容。)
+*   **发送语音**: \`{"type": "voice", "content": "你想在语音里说的话"}\` 
 *   **发送表情**: \`{"type": "sticker", "name": "表情名"}\`
 *   **发起情侣邀请**: \`{"type": "couple_request"}\`
 *   **回应情侣邀请**: \`{"type": "couple_request_response", "decision": "accept" or "reject"}\`
@@ -3658,8 +3661,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ...historySlice.map(msg => {
                 if (msg.isHidden) return null;
 
-                const sender = msg.role === 'user' ? (chat.settings.userName || '用户') : (chat.settings.aiName || chat.name);
-                const formattedTimestamp = `${sender} (Timestamp: ${msg.timestamp}): `;
+                const formattedTimestamp = `(ID: ${msg.id}, Timestamp: ${msg.timestamp}): `;
 
                 // --- 【【【全新 V5.7 最终修复版：全面增强消息上下文】】】 ---
                 let contentText = '';
@@ -3792,86 +3794,61 @@ document.addEventListener('DOMContentLoaded', () => {
             const aiReplyString = data.choices[0].message.content;
             const replyActions = parseAiJsonResponse(aiReplyString);
 
-            if (currentlyVisibleChatId !== originalChatId && pushSubscription) {
-                console.log('用户不在当前页面，准备发送推送通知...');
-                for (const action of replyActions) {
-                    const currentChat = chats.find(c => c.id === originalChatId);
-                    if (!currentChat) continue;
-
-                    let notificationBody = '';
-                    if (action.type === 'text') {
-                        notificationBody = action.content;
-                    } else if (action.type === 'sticker') {
-                        notificationBody = `[表情: ${action.name}]`;
-                    } else {
-                        notificationBody = '[收到一条新消息]';
-                    }
-                    const payload = {
-                        subscription: pushSubscription,
-                        message: {
-                            title: currentChat.settings.aiName || currentChat.name,
-                            body: notificationBody,
-                            icon: currentChat.settings.aiAvatar || 'https://tc-new.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250912/I4Xl/1206X1501/IMG_6556.jpeg/webp',
-                            chatId: originalChatId
-                        }
-                    };
-                    fetch(`${window.BACKEND_URL}/send-notification`, {
-                        method: 'POST',
-                        body: JSON.stringify(payload),
-                        headers: { 'Content-Type': 'application/json' }
-                    }).catch(err => console.error('发送推送请求失败:', err));
-                }
-            }
-
-            // 【【【核心逻辑修正】】】
+            // 【【【核心逻辑重构】】】
             for (let i = 0; i < replyActions.length; i++) {
                 const action = replyActions[i];
+                // 再次获取最新的 chat 对象，确保数据是最新的
                 const currentChat = chats.find(c => c.id === originalChatId);
                 if (!currentChat) continue;
 
-                // 这是消息之间的间隔，此时应该显示“正在输入”
-                // 对于第一条消息 (i > 0 为 false)，不等待，因为 API 请求本身就是等待过程
+                // 消息之间的延迟动画
                 if (i > 0) {
-                    if (isPopTheme) animateStatusText(true); // 切换为“正在输入”
-                    // 在“正在输入”状态下，进行不规律的长时间等待
+                    if (isPopTheme && currentlyVisibleChatId === originalChatId) {
+                        animateStatusText(true); // 只有在当前聊天界面才显示“正在输入”
+                    }
                     await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 1200));
                 }
 
-                if (currentlyVisibleChatId !== originalChatId) {
-                    currentChat.unreadCount = (currentChat.unreadCount || 0) + 1;
-                }
-
+                // 准备要添加的新消息
                 const aiMessageBase = {
                     id: 'msg_' + Date.now() + Math.random(),
                     role: 'assistant',
                     timestamp: Date.now()
                 };
-
                 let messageToAppend = null;
-                switch (action.type) {
-                    // 【【【核心新增：处理AI的转账回应】】】
-                    case 'transfer_response': {
-                        // 1. 从后往前找到最近一条“待处理”的转账消息
-                        const originalTransferMsg = [...currentChat.history].reverse().find(m => m.type === 'transfer' && m.status === 'pending');
 
+                // (switch 语句处理各种消息类型的逻辑保持不变, 此处省略以保持简洁...)
+                switch (action.type) {
+                    case 'quote_reply': {
+                        const originalMsg = currentChat.history.find(m => m.id === action.target_id);
+                        if (originalMsg) {
+                            const quoteAuthor = originalMsg.role === 'user' ? (currentChat.settings.userName || '我') : (currentChat.settings.aiName || currentChat.name);
+                            let quoteContent = '';
+                            if (originalMsg.type === 'sticker') {
+                                quoteContent = `[表情: ${originalMsg.meaning}]`;
+                            } else {
+                                quoteContent = originalMsg.content;
+                            }
+                            messageToAppend = { ...aiMessageBase, content: action.content, type: 'text', quote: { id: originalMsg.id, author: quoteAuthor, content: quoteContent } };
+                        } else {
+                            messageToAppend = { ...aiMessageBase, content: action.content, type: 'text' };
+                        }
+                        break;
+                    }
+                    case 'voice': {
+                        const text = action.content || '';
+                        const duration = Math.max(1, Math.min(60, Math.ceil(text.length / 4)));
+                        const displayContentHTML = `<span class="voice-icon mirrored"><svg t="1759890637480" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="17296" width="19" height="19"><path d="M337.066667 505.6c0-115.2 46.933333-221.866667 121.6-298.666667l-59.733334-59.733333c-76.8 78.933333-130.133333 183.466667-142.933333 298.666667-2.133333 19.2-4.266667 38.4-4.266667 59.733333s2.133333 40.533333 4.266667 59.733333c14.933333 121.6 70.4 230.4 155.733333 311.466667l61.866667-59.733333c-85.333333-78.933333-136.533333-187.733333-136.533333-311.466667z" fill="#353333" p-id="17297"></path><path d="M529.066667 505.6c0-61.866667 25.6-119.466667 66.133333-162.133333L533.333333 283.733333c-55.466667 57.6-89.6 136.533333-89.6 221.866667 0 93.866667 40.533333 179.2 104.533334 236.8l61.866666-59.733333c-51.2-42.666667-81.066667-106.666667-81.066666-177.066667zM667.733333 418.133333c-21.333333 23.466667-34.133333 53.333333-34.133333 87.466667 0 42.666667 21.333333 78.933333 51.2 102.4l87.466667-85.333333-104.533334-104.533334z" fill="#353333" p-id="17298"></path></svg></span><span class="voice-duration">${duration}"</span>`;
+                        messageToAppend = { ...aiMessageBase, content: text, displayContent: displayContentHTML, duration: duration, type: 'voice' };
+                        break;
+                    }
+                    case 'transfer_response': {
+                        const originalTransferMsg = [...currentChat.history].reverse().find(m => m.type === 'transfer' && m.status === 'pending');
                         if (originalTransferMsg) {
-                            // 2. 根据AI的决定，更新原始消息的状态
                             const newStatus = action.decision === 'accept' ? 'accepted' : 'rejected';
                             originalTransferMsg.status = newStatus;
-
-                            // 3. 创建一条属于AI的、同样状态的转账消息
-                            messageToAppend = {
-                                ...aiMessageBase,
-                                type: 'transfer',
-                                amount: originalTransferMsg.amount, // 金额与原始消息一致
-                                remarks: '', // AI侧不需要备注
-                                status: newStatus // 状态与原始消息一致
-                            };
-
-                            // 4. 立刻重新渲染消息列表，让用户看到原始消息的状态变化
-                            if (currentlyVisibleChatId === originalChatId) {
-                                renderMessages();
-                            }
+                            messageToAppend = { ...aiMessageBase, type: 'transfer', amount: originalTransferMsg.amount, remarks: '', status: newStatus };
+                            if (currentlyVisibleChatId === originalChatId) { renderMessages(); }
                         }
                         break;
                     }
@@ -3888,14 +3865,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (existingPartnerId && existingPartnerId !== currentChat.id) {
                                 const oldChat = chats.find(c => c.id === existingPartnerId);
                                 if (oldChat) {
-                                    oldChat.history.push({
-                                        id: 'msg_' + Date.now() + Math.random(),
-                                        role: 'system',
-                                        type: 'couple_status',
-                                        statusType: 'system-ends-relationship-due-to-new',
-                                        isActionable: false,
-                                        timestamp: Date.now()
-                                    });
+                                    oldChat.history.push({ id: 'msg_' + Date.now() + Math.random(), role: 'system', type: 'couple_status', statusType: 'system-ends-relationship-due-to-new', isActionable: false, timestamp: Date.now() });
                                 }
                             }
                             coupleSpaceSettings.partnerChatId = currentChat.id;
@@ -3916,27 +3886,23 @@ document.addEventListener('DOMContentLoaded', () => {
                             updateCoupleSpaceUI();
                         }
                         break;
-                    // 【【【新增功能1：修复AI表情】】】
                     case 'sticker': {
                         let stickerUrl = '';
                         const stickerName = action.name;
-                        // 在当前聊天的所有已启用的表情包库中查找表情
                         if (currentChat.settings.stickerPacks) {
                             for (const pack of currentChat.settings.stickerPacks) {
                                 if (pack.enabled && pack.stickers) {
                                     const foundSticker = pack.stickers.find(s => s.name === stickerName);
                                     if (foundSticker) {
                                         stickerUrl = foundSticker.url;
-                                        break; // 找到了就停止搜索
+                                        break;
                                     }
                                 }
                             }
                         }
-                        // 如果成功找到了URL
                         if (stickerUrl) {
                             messageToAppend = { ...aiMessageBase, content: stickerUrl, type: 'sticker', meaning: stickerName };
                         } else {
-                            // 如果没找到（比如表情被删了），就发送一条文本提示，避免显示破碎的图片
                             console.warn(`AI试图发送表情 "${stickerName}", 但它在已启用的表情包中未找到。`);
                             messageToAppend = { ...aiMessageBase, content: `[AI试图发送表情: ${stickerName}]`, type: 'text' };
                         }
@@ -3947,20 +3913,48 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
                 }
 
-
+                // **核心判断逻辑**
                 if (messageToAppend) {
+                    // 1. 无条件将消息添加到历史记录
                     currentChat.history.push(messageToAppend);
-                    if (currentlyVisibleChatId === originalChatId) {
-                        appendMessage(messageToAppend, messageContainer, true);
-                    }
-                    // 消息发送后，立即切换为“在线”
-                    if (isPopTheme) animateStatusText(false);
-                }
-            }
 
-            saveChats();
-            renderContactList();
-            updateTotalUnreadBadge();
+                    // 2. 根据用户是否在看，决定是更新UI还是标记未读
+                    if (currentlyVisibleChatId === originalChatId) {
+                        // 用户在看，直接渲染消息
+                        appendMessage(messageToAppend, messageContainer, true);
+                        if (isPopTheme) animateStatusText(false); // 渲染后显示“在线”
+                    } else {
+                        // 用户不在，增加未读计数
+                        currentChat.unreadCount = (currentChat.unreadCount || 0) + 1;
+
+                        // 发送推送通知 (如果需要)
+                        if (pushSubscription) {
+                            let notificationBody = '';
+                            if (messageToAppend.type === 'text') notificationBody = messageToAppend.content;
+                            else if (messageToAppend.type === 'sticker') notificationBody = `[表情: ${messageToAppend.meaning}]`;
+                            else notificationBody = '[收到一条新消息]';
+
+                            const payload = {
+                                subscription: pushSubscription,
+                                message: {
+                                    title: currentChat.settings.aiName || currentChat.name,
+                                    body: notificationBody,
+                                    icon: currentChat.settings.aiAvatar || 'https://tc-new.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250912/I4Xl/1206X1501/IMG_6556.jpeg/webp',
+                                    chatId: originalChatId
+                                }
+                            };
+                            fetch(`${window.BACKEND_URL}/send-notification`, {
+                                method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' }
+                            }).catch(err => console.error('发送推送请求失败:', err));
+                        }
+                    }
+                }
+
+                // 3. 无论用户在不在看，都立即保存数据并刷新列表
+                await saveChats();
+                renderContactList();
+                updateTotalUnreadBadge();
+            }
 
         } catch (error) {
             console.error('API 调用或解析出错:', error);
