@@ -6154,17 +6154,14 @@
    /* --- 2. 顶栏 (Header) 改造 (基于微信主题) --- */
 
    /* 顶栏容器：保持微信主题的文档流布局和背景 */
-   /* 修改后应该是这样的 */
    body.theme-pop #chat-interface-screen .header {
        position: relative;
        background: #fcfcfc !important;
        backdrop-filter: blur(4px) !important;
        -webkit-backdrop-filter: blur(4px) !important;
        border-bottom: 0.6px solid #dcdcdc !important;
-       height: 50px !important;
-       /* 这里改了 */
-       padding-top: 25px !important;
-       /* 这里改了 */
+       height: 46px !important;
+       padding-top: 30px !important;
    }
 
    /* 顶栏标题：保持微信主题的居中和样式 */
@@ -6435,7 +6432,7 @@
        /* 开启绝对定位，让它浮动起来 */
        left: 37px;
        /* 距离左侧的距离，您可以微调这个值 */
-       top: 39px;
+       top: 42px;
        /* 距离顶部的距离，您可以微调这个值 */
        font-size: 14.8px;
        /* 与标题一样的大小 */
@@ -8447,7 +8444,7 @@
    /* --- 【位置调整后】中间App图标容器 --- */
    #main-apps-container {
        position: absolute;
-       top: 290px;
+       top: 330px;
        right: 26.8px;
        width: 160px;
        /* 【修复】稍微增加容器宽度以容纳更大的间距 */
@@ -8468,7 +8465,7 @@
    /* --- 【位置调整后】音乐组件 --- */
    #music-widget {
        position: absolute;
-       top: 460px;
+       top: 490px;
        /* 定位到自定义矩形条下方 */
        right: 30px;
        /* 距离右边框的距离 */
@@ -8601,7 +8598,7 @@
    /* --- 纪念日组件 --- */
    #days-matter-widget {
        position: absolute;
-       top: 370px;
+       top: 410px;
        /* 【位置微调】与右侧图标顶部对齐 */
        left: 25px;
        width: 158px;
@@ -8688,7 +8685,7 @@
    /* --- 自定义矩形条容器 --- */
    #capsule-widgets-container {
        position: absolute;
-       top: 295px;
+       top: 335px;
        /* 定位在纪念日组件下方 */
        left: 30px;
        width: 150px;
