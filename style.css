@@ -8757,7 +8757,7 @@
    body {
        /* 为背景色变化添加过渡动画 */
        transition: background-color 0.4s ease;
-       background-color: #fafafa;
+
        /* 默认背景色 */
    }
 
@@ -8790,8 +8790,6 @@
        width: 425px;
        height: 860px;
        /* 视觉样式 */
-       background-color: #fff;
-       box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
        /* 悬浮阴影 */
        border-radius: 0px;
        overflow: hidden;
@@ -8812,9 +8810,9 @@
    /* 当手机框可见时，包裹层的“变身”样式 */
    body.phone-frame-visible #phone-wrapper {
        /* 设定一个固定的手机尺寸，而不是百分比 */
-       width: 450px;
-       height: 844px;
-       min-height: 844px;
+       width: 425px;
+       height: 860px;
+       min-height: 860px;
        /* 【【【核心修复】】】明确禁止flex项目收缩 */
        flex-shrink: 0;
 
