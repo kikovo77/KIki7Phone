@@ -6,38 +6,35 @@
 
    html,
    body {
-       /* 【核心修改】使用 100vh 单位，让 body 高度强制占满整个屏幕可见区域 */
-       /* 【核心修改】使用 100vh 单位，让 body 高度强制占满整个屏幕可见区域 */
-       /* 100dvh 在处理移动端浏览器地址栏动态显隐时更稳定，但 100vh 兼容性更好，这里我们先用 100vh */
-       height: 100vh;
-       /* 同时确保宽度也占满 */
-       /* 100dvh 在处理移动端浏览器地址栏动态显隐时更稳定，但 100vh 兼容性更好，这里我们先用 100vh */
-       width: 100vw;
-       /* 同时确保宽度也占满 */
-       /* 【核心修复】重新加回 overflow: hidden */
+       height: 100%;
        margin: 0;
-       /* --- 【修改】电脑端默认背景设置 (画中画基底) --- */
        padding: 0;
-       /* 电脑端看到的粉色背景 */
-       overflow: hidden;
-       /* 开启Flex布局 */
-       /* 【核心修复】重新加回 overflow: hidden */
-       /* 水平居中 */
+       /* 【【【核心修改】】】移除此处的 overflow: hidden，让背景可以自由扩展 */
+       /* 【【【核心新增】】】 在这里为全局添加左右安全边距 */
+       padding-left: env(safe-area-inset-left);
+       padding-right: env(safe-area-inset-right);
        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-       /* 垂直居中 */
        /* --- 【修改】电脑端默认背景设置 (画中画基底) --- */
        background-color: #ffeef2;
        /* 电脑端看到的粉色背景 */
        display: flex;
-       /* 让屏幕高度包含底部安全区域，修复空白 */
        /* 开启Flex布局 */
        justify-content: center;
        /* 水平居中 */
        align-items: center;
        /* 垂直居中 */
-       /* 继承body的安全区域内边距，保留占位 */
+   }
+
+   #phone-screen {
+       width: 100%;
+       /* 让屏幕高度包含底部安全区域，修复空白 */
+       height: 100vh;
+       height: -webkit-fill-available;
+       position: relative;
        overflow: hidden;
        background-color: #fafafa;
+       /* 继承body的安全区域内边距，保留占位 */
+       padding-top: env(safe-area-inset-top);
        padding-bottom: env(safe-area-inset-bottom);
        box-sizing: border-box;
    }
