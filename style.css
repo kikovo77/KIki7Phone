@@ -180,7 +180,6 @@
        width: 100%;
        height: 56px;
        padding: 10px 5px;
-       padding-top: 10px;
        /* 为手机状态栏预留出空间 */
        display: flex;
        /* 使用flex布局，方便内部元素对齐 */
@@ -6147,14 +6146,17 @@
    /* --- 2. 顶栏 (Header) 改造 (基于微信主题) --- */
 
    /* 顶栏容器：保持微信主题的文档流布局和背景 */
+   /* 修改后应该是这样的 */
    body.theme-pop #chat-interface-screen .header {
        position: relative;
        background: #fcfcfc !important;
        backdrop-filter: blur(4px) !important;
        -webkit-backdrop-filter: blur(4px) !important;
        border-bottom: 0.6px solid #dcdcdc !important;
-       height: 46px !important;
-       padding-top: 45px !important;
+       height: 50px !important;
+       /* 这里改了 */
+       padding-top: 25px !important;
+       /* 这里改了 */
    }
 
    /* 顶栏标题：保持微信主题的居中和样式 */
@@ -6163,7 +6165,7 @@
        left: 49.1%;
        top: 50%;
        transform: translate(-50%, -50%);
-       padding-top: 35px;
+       padding-top: 15px;
        color: #202020 !important;
        font-size: 16px !important;
        font-weight: 500 !important;
@@ -6211,15 +6213,15 @@
 
    /* 将“更多”按钮变成一个圆形的头像 */
    body.theme-pop #chat-settings-btn {
-       width: 40px !important;
-       height: 40px !important;
+       width: 46px !important;
+       height: 46px !important;
        border-radius: 50% !important;
        background-size: cover !important;
        background-position: center !important;
        /* 通过背景图来显示头像 */
        background-image: var(--pop-theme-avatar-url);
        position: relative !important;
-       top: 4px !important;
+       top: 0px !important;
        right: -30px !important;
        /* 向左移动一点以对齐 */
        border: none !important;
@@ -6425,9 +6427,9 @@
        /* 开启绝对定位，让它浮动起来 */
        left: 37px;
        /* 距离左侧的距离，您可以微调这个值 */
-       top: 56px;
+       top: 39px;
        /* 距离顶部的距离，您可以微调这个值 */
-       font-size: 15.4px;
+       font-size: 14.8px;
        /* 与标题一样的大小 */
        color: #f855a7;
        /* 您指定的颜色 */
@@ -6932,7 +6934,7 @@
 
        /* --- 【【【全新的】】】“在线/正在输入”状态独立微调区 --- */
        /* 说明：这里的 top 和 left 值完全复制自您旧的 #chat-contact-status 样式 */
-       top: 73px;
+       top: 60px;
        left: calc(50% + -3px);
 
        /* --- 容器尺寸与字体样式 --- */
