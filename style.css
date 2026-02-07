@@ -34,6 +34,7 @@
    /* 【新增】状态栏样式 */
    #status-bar {
        position: absolute;
+       left: 0;
        top: -15px;
        left: 0;
        width: 100%;
@@ -42,7 +43,7 @@
        box-sizing: border-box;
        padding: 0 15px 0 35px;
        /* 【修改】增加了左侧内边距，让时间右移 */
-       display: flex;
+       display: none;
        justify-content: space-between;
        align-items: center;
        font-size: 15.6px !important;
@@ -851,7 +852,7 @@
        height: 76px;
        box-sizing: border-box;
        padding: 0 15px;
-       display: flex;
+       display: none;
        justify-content: flex-end;
        /* 只需右对齐图标 */
        align-items: center;
@@ -866,7 +867,7 @@
        /* 与右侧图标垂直对齐 */
        left: 28px;
        /* 左侧边距 */
-       display: flex;
+       display: none;
        align-items: center;
        gap: 8px;
        /* 名字和心形的间距 */
@@ -966,7 +967,7 @@
        overflow-y: auto;
        /* 核心：当内容超出时，允许垂直滚动 */
        background-color: #202020;
-       padding: 90px 0 110px 0;
+       padding: 50px 0 110px 0;
        /* 顶部为状态栏和灵动岛留空，底部为Dock栏留空 */
        opacity: 0;
        /* 【【【修改】】】让桌面默认透明，配合JS做淡入效果 */
@@ -8253,7 +8254,7 @@
        height: 36px;
        background-color: #000;
        border-radius: 18px;
-       display: flex;
+       display: none;
        align-items: center;
        padding: 4px;
        box-sizing: border-box;
@@ -8278,9 +8279,9 @@
        margin: -21px auto 0 auto;
        /* 顶部外边距20px, 左右自动居中 */
        width: 90%;
-       max-width: 390px;
+       max-width: 370px;
        /* 减小最大宽度 */
-       height: 250px;
+       height: 246px;
        /* 减小总高度 */
        border-radius: 25px;
        /* 稍微减小圆角 */
@@ -8436,7 +8437,7 @@
    /* --- 【位置调整后】中间App图标容器 --- */
    #main-apps-container {
        position: absolute;
-       top: 340px;
+       top: 290px;
        right: 26.8px;
        width: 160px;
        /* 【修复】稍微增加容器宽度以容纳更大的间距 */
@@ -8457,7 +8458,7 @@
    /* --- 【位置调整后】音乐组件 --- */
    #music-widget {
        position: absolute;
-       top: 510px;
+       top: 460px;
        /* 定位到自定义矩形条下方 */
        right: 30px;
        /* 距离右边框的距离 */
@@ -8491,7 +8492,7 @@
    #bottom-dock {
        position: absolute;
        /* 恢复为 absolute 定位 */
-       bottom: 30px;
+       bottom: 70px;
        /* 【核心修改】设置一个正值，让它在布局的底部，而不是屏幕外 */
        left: 50%;
        transform: translateX(-50%);
@@ -8589,7 +8590,7 @@
    /* --- 纪念日组件 --- */
    #days-matter-widget {
        position: absolute;
-       top: 430px;
+       top: 370px;
        /* 【位置微调】与右侧图标顶部对齐 */
        left: 25px;
        width: 158px;
@@ -8680,7 +8681,7 @@
    /* --- 自定义矩形条容器 --- */
    #capsule-widgets-container {
        position: absolute;
-       top: 350px;
+       top: 295px;
        /* 定位在纪念日组件下方 */
        left: 30px;
        width: 150px;
