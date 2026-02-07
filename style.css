@@ -8279,9 +8279,9 @@
        margin: -21px auto 0 auto;
        /* 顶部外边距20px, 左右自动居中 */
        width: 90%;
-       max-width: 370px;
+       max-width: 365px;
        /* 减小最大宽度 */
-       height: 246px;
+       height: 239px;
        /* 减小总高度 */
        border-radius: 25px;
        /* 稍微减小圆角 */
@@ -8313,7 +8313,7 @@
    #user-card-foreground-clipper {
        position: absolute;
        /* 【核心恢复】恢复你最初的定位方式，这是形成弧形的关键 */
-       bottom: -110px;
+       bottom: -117px;
        left: 0;
        width: 100%;
        height: 250px;
@@ -8354,7 +8354,7 @@
    #user-card-avatar {
        position: absolute;
        /* 绝对定位，脱离文档流，才能悬浮 */
-       top: 58px;
+       top: 47px;
        /* 头像的垂直中心线位置 */
        left: 50%;
        /* 水平居中 */
@@ -8492,7 +8492,7 @@
    #bottom-dock {
        position: absolute;
        /* 恢复为 absolute 定位 */
-       bottom: 55px;
+       bottom: 50px;
        /* 【核心修改】设置一个正值，让它在布局的底部，而不是屏幕外 */
        left: 50%;
        transform: translateX(-50%);
@@ -8597,18 +8597,14 @@
        height: 158px;
        /* --- 【核心修复】多层次样式叠加 --- */
        /* 1. 通透层(光泽) + 底层(基色) */
-       background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.22)),
-           rgba(255, 255, 255, 0.12);
 
-       /* 2. 模糊层 (增加模糊度) */
-       backdrop-filter: blur(4px);
-       -webkit-backdrop-filter: blur(4px);
+
        border-radius: 22px;
        /* 【核心】使用box-shadow模拟不规则描边 */
        box-shadow:
            -0.8px -0.8px 0.5px rgba(245, 245, 245, 0.313) inset,
            /* 左上角亮的内阴影 (模拟粗边) */
-           1.4px 1.4px 1px rgba(255, 255, 255, 0.557) inset;
+           0.8px 0.8px 1px rgba(255, 255, 255, 0.557) inset;
        /* 右下角暗的内阴影 (模拟细边) */
        display: flex;
        flex-direction: column;
