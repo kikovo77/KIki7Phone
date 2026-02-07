@@ -10514,6 +10514,60 @@
        border-color: #353333;
    }
 
+   /* ===================================================================
+           【新增】手机端强制全屏适配 (增强版)
+           将判定范围扩大到 850px，确保所有手机都能全屏
+           =================================================================== */
+   @media (max-width: 860px) {
+
+       /* 1. 强制关闭电脑端的 Flex 居中布局 */
+       html,
+       body {
+           background-color: #fafafa !important;
+           /* 恢复手机背景色 */
+           display: block !important;
+           /* 关掉 Flex */
+           width: 100% !important;
+           height: 100% !important;
+           padding: 0 !important;
+           margin: 0 !important;
+           overflow: hidden !important;
+       }
+
+       /* 2. 强制手机容器撑满屏幕，使用 vw/vh 单位 */
+       #phone-wrapper {
+           width: 100vw !important;
+           /* 强制撑满视口宽度 */
+           height: 100vh !important;
+           /* 强制撑满视口高度 */
+           min-width: 100vw !important;
+           min-height: 100vh !important;
+
+           border-radius: 0 !important;
+           /* 去掉圆角 */
+           box-shadow: none !important;
+           /* 去掉阴影 */
+           margin: 0 !important;
+           padding: 0 !important;
+           top: 0 !important;
+           left: 0 !important;
+           right: 0 !important;
+           bottom: 0 !important;
+
+           transform: none !important;
+           /* 禁止任何缩放 */
+           border: none !important;
+           background-color: #fafafa !important;
+           /* 确保背景连贯 */
+       }
+
+       /* 3. 修复内容层可能存在的圆角 */
+       #phone-screen {
+           border-radius: 0 !important;
+           width: 100% !important;
+           height: 100% !important;
+       }
+   }
 
    /* 
         ===================================================================
