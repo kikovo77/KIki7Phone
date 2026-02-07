@@ -10529,12 +10529,10 @@
        /* 1. 强制关闭电脑端的 Flex 居中布局 */
        html,
        body {
-           background-color: #000000 !important;
-           /* 恢复手机背景色 */
            display: block !important;
            /* 关掉 Flex */
-           width: 100% !important;
-           height: 100% !important;
+           width: 100vw !important;
+           height: 100vh !important;
            padding: 0 !important;
            margin: 0 !important;
            overflow: hidden !important;
