@@ -180,7 +180,7 @@
        width: 100%;
        height: 56px;
        padding: 10px 5px;
-       padding-top: 50px;
+       padding-top: 10px;
        /* 为手机状态栏预留出空间 */
        display: flex;
        /* 使用flex布局，方便内部元素对齐 */
@@ -1077,7 +1077,7 @@
        /* --- 兼容Safari等浏览器的毛玻璃效果，作用同上。--- */
        height: 70px;
        /* --- 顶栏的高度。--- */
-       padding-top: 50px;
+       padding-top: 10px;
        /* --- 在顶栏内部增加上边距，为手机顶部的“状态栏”（显示时间、电量的地方）预留出空间。--- */
        box-sizing: content-box;
        /* --- 计算方式：让padding和border不计入设定的height中，确保顶栏可见区域就是70px高。--- */
