@@ -180,7 +180,7 @@
        width: 100%;
        height: 56px;
        padding: 10px 5px;
-       padding-top: 0px;
+       padding-top: 50px;
        /* 为手机状态栏预留出空间 */
        display: flex;
        /* 使用flex布局，方便内部元素对齐 */
@@ -955,7 +955,6 @@
 
    /* --- 4.2 桌面 (#home-screen) --- */
 
-   /* 桌面主容器 */
    #home-screen {
        position: relative;
        /* 保持相对定位基准，用于内部绝对定位元素的对齐 */
@@ -967,7 +966,8 @@
        overflow-y: auto;
        /* 核心：当内容超出时，允许垂直滚动 */
        background-color: #202020;
-       padding: 50px 0 110px 0;
+       /* 【核心修改】将固定的 110px 底部内边距，改为 110px 再 “加上” 底部安全距离 */
+       padding: 50px 0 calc(110px + env(safe-area-inset-bottom)) 0;
        /* 顶部为状态栏和灵动岛留空，底部为Dock栏留空 */
        opacity: 0;
        /* 【【【修改】】】让桌面默认透明，配合JS做淡入效果 */
@@ -8495,7 +8495,8 @@
    #bottom-dock {
        position: absolute;
        /* 恢复为 absolute 定位 */
-       bottom: 50px;
+       /* 【核心修改】将固定的 30px 底部距离，改为 30px 再 “加上” 底部安全距离 */
+       bottom: calc(50px + env(safe-area-inset-bottom));
        /* 【核心修改】设置一个正值，让它在布局的底部，而不是屏幕外 */
        left: 50%;
        transform: translateX(-50%);
@@ -8788,7 +8789,7 @@
    #phone-wrapper {
        /* 设定固定的手机尺寸基准 */
        width: 425px;
-       height: 860 px;
+       height: 860px;
        /* 视觉样式 */
        /* 悬浮阴影 */
        border-radius: 0px;
