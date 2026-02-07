@@ -34,8 +34,8 @@
        height: -webkit-fill-available;
        position: relative;
        overflow: hidden;
-       background-color: #f70d0d;
-       /* 继承body的安全区域内边距，保留占位 */
+       background-color: #fafafa;
+
    }
 
    /* 【新增】状态栏样式 */
@@ -10529,7 +10529,7 @@
        /* 1. 强制关闭电脑端的 Flex 居中布局 */
        html,
        body {
-           background-color: #fafafa !important;
+           background-color: #000000 !important;
            /* 恢复手机背景色 */
            display: block !important;
            /* 关掉 Flex */
