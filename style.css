@@ -8492,7 +8492,7 @@
    #bottom-dock {
        position: absolute;
        /* 恢复为 absolute 定位 */
-       bottom: 70px;
+       bottom: 55px;
        /* 【核心修改】设置一个正值，让它在布局的底部，而不是屏幕外 */
        left: 50%;
        transform: translateX(-50%);
