@@ -6161,7 +6161,7 @@
        -webkit-backdrop-filter: blur(4px) !important;
        border-bottom: 0.6px solid #dcdcdc !important;
        height: 46px !important;
-       padding-top: 30px !important;
+       padding-top: px !important;
    }
 
    /* 顶栏标题：保持微信主题的居中和样式 */
@@ -6287,6 +6287,7 @@
        color: #000000 !important;
        font-size: 16px !important;
        top: -7px !important;
+       right: -12px !important;
        padding: 5px 5px 8px 8px !important;
        min-height: 2px !important;
    }
@@ -6325,7 +6326,7 @@
 
    /* 按钮位置 (与微信主题一致) */
    body.theme-pop #more-btn {
-       left: 5px !important;
+       left: 15px !important;
        top: -4px !important;
    }
 
@@ -6336,11 +6337,11 @@
    }
 
    body.theme-pop #generate-btn {
-       right: -48px;
+       right: -56px;
    }
 
    body.theme-pop #send-btn {
-       right: -84px;
+       right: -92px;
    }
 
    /* --- 6. 【pop主题需求5】气泡样式改回日间模式 --- */
@@ -6432,7 +6433,7 @@
        /* 开启绝对定位，让它浮动起来 */
        left: 37px;
        /* 距离左侧的距离，您可以微调这个值 */
-       top: 42px;
+       top: 39px;
        /* 距离顶部的距离，您可以微调这个值 */
        font-size: 14.8px;
        /* 与标题一样的大小 */
