@@ -1,7 +1,7 @@
 {
     "name": "KikiPhone",
     "short_name": "KikiPhone",
-    "description": "一个高度可定制化的AI聊天应用界面。",
+    "description": "聊天",
     "start_url": "./",
     "scope": "./",
     "display": "standalone",
