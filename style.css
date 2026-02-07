@@ -6,45 +6,26 @@
 
    html,
    body {
-       /* 【核心修改】使用 100vh 单位，让 body 高度强制占满整个屏幕可见区域 */
-       height: 100vh;
-       /* 100dvh 在处理移动端浏览器地址栏动态显隐时更稳定，但 100vh 兼容性更好，这里我们先用 100vh */
-       width: 100vw;
-       /* 同时确保宽度也占满 */
+       height: 100%;
        margin: 0;
        padding: 0;
        overflow: hidden;
        /* 【核心修复】重新加回 overflow: hidden */
        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-       /* --- 【修改】电脑端默认背景设置 (画中画基底) --- */
-       background-color: #ffeef2;
-       /* 电脑端看到的粉色背景 */
-       display: flex;
-       /* 开启Flex布局 */
-       justify-content: center;
-       /* 水平居中 */
-       align-items: center;
-       /* 垂直居中 */
+       background-color: #fafafa;
    }
 
    #phone-screen {
        width: 100%;
-       /* 让屏幕高度包含底部安全区域，修复空白 */
-       height: 100vh;
-       height: -webkit-fill-available;
+       height: 100%;
        position: relative;
        overflow: hidden;
        background-color: #fafafa;
-       /* 继承body的安全区域内边距，保留占位 */
-       padding-top: env(safe-area-inset-top);
-       padding-bottom: env(safe-area-inset-bottom);
-       box-sizing: border-box;
    }
 
    /* 【新增】状态栏样式 */
    #status-bar {
        position: absolute;
-       left: 0;
        top: -15px;
        left: 0;
        width: 100%;
@@ -53,7 +34,7 @@
        box-sizing: border-box;
        padding: 0 15px 0 35px;
        /* 【修改】增加了左侧内边距，让时间右移 */
-       display: none;
+       display: flex;
        justify-content: space-between;
        align-items: center;
        font-size: 15.6px !important;
@@ -862,7 +843,7 @@
        height: 76px;
        box-sizing: border-box;
        padding: 0 15px;
-       display: none;
+       display: flex;
        justify-content: flex-end;
        /* 只需右对齐图标 */
        align-items: center;
@@ -877,7 +858,7 @@
        /* 与右侧图标垂直对齐 */
        left: 28px;
        /* 左侧边距 */
-       display: none;
+       display: flex;
        align-items: center;
        gap: 8px;
        /* 名字和心形的间距 */
@@ -965,6 +946,7 @@
 
    /* --- 4.2 桌面 (#home-screen) --- */
 
+   /* 桌面主容器 */
    #home-screen {
        position: relative;
        /* 保持相对定位基准，用于内部绝对定位元素的对齐 */
@@ -976,8 +958,7 @@
        overflow-y: auto;
        /* 核心：当内容超出时，允许垂直滚动 */
        background-color: #202020;
-       /* 【核心修改】将固定的 110px 底部内边距，改为 110px 再 “加上” 底部安全距离 */
-       padding: 50px 0 calc(110px + env(safe-area-inset-bottom)) 0;
+       padding: 90px 0 110px 0;
        /* 顶部为状态栏和灵动岛留空，底部为Dock栏留空 */
        opacity: 0;
        /* 【【【修改】】】让桌面默认透明，配合JS做淡入效果 */
@@ -6157,17 +6138,14 @@
    /* --- 2. 顶栏 (Header) 改造 (基于微信主题) --- */
 
    /* 顶栏容器：保持微信主题的文档流布局和背景 */
-   /* 修改后应该是这样的 */
    body.theme-pop #chat-interface-screen .header {
        position: relative;
        background: #fcfcfc !important;
        backdrop-filter: blur(4px) !important;
        -webkit-backdrop-filter: blur(4px) !important;
        border-bottom: 0.6px solid #dcdcdc !important;
-       height: 50px !important;
-       /* 这里改了 */
-       padding-top: 25px !important;
-       /* 这里改了 */
+       height: 46px !important;
+       padding-top: 45px !important;
    }
 
    /* 顶栏标题：保持微信主题的居中和样式 */
@@ -6176,7 +6154,7 @@
        left: 49.1%;
        top: 50%;
        transform: translate(-50%, -50%);
-       padding-top: 15px;
+       padding-top: 35px;
        color: #202020 !important;
        font-size: 16px !important;
        font-weight: 500 !important;
@@ -6224,15 +6202,15 @@
 
    /* 将“更多”按钮变成一个圆形的头像 */
    body.theme-pop #chat-settings-btn {
-       width: 46px !important;
-       height: 46px !important;
+       width: 40px !important;
+       height: 40px !important;
        border-radius: 50% !important;
        background-size: cover !important;
        background-position: center !important;
        /* 通过背景图来显示头像 */
        background-image: var(--pop-theme-avatar-url);
        position: relative !important;
-       top: 0px !important;
+       top: 4px !important;
        right: -30px !important;
        /* 向左移动一点以对齐 */
        border: none !important;
@@ -6438,9 +6416,9 @@
        /* 开启绝对定位，让它浮动起来 */
        left: 37px;
        /* 距离左侧的距离，您可以微调这个值 */
-       top: 39px;
+       top: 56px;
        /* 距离顶部的距离，您可以微调这个值 */
-       font-size: 14.8px;
+       font-size: 15.4px;
        /* 与标题一样的大小 */
        color: #f855a7;
        /* 您指定的颜色 */
@@ -6945,7 +6923,7 @@
 
        /* --- 【【【全新的】】】“在线/正在输入”状态独立微调区 --- */
        /* 说明：这里的 top 和 left 值完全复制自您旧的 #chat-contact-status 样式 */
-       top: 60px;
+       top: 73px;
        left: calc(50% + -3px);
 
        /* --- 容器尺寸与字体样式 --- */
@@ -8267,7 +8245,7 @@
        height: 36px;
        background-color: #000;
        border-radius: 18px;
-       display: none;
+       display: flex;
        align-items: center;
        padding: 4px;
        box-sizing: border-box;
@@ -8292,9 +8270,9 @@
        margin: -21px auto 0 auto;
        /* 顶部外边距20px, 左右自动居中 */
        width: 90%;
-       max-width: 365px;
+       max-width: 390px;
        /* 减小最大宽度 */
-       height: 239px;
+       height: 250px;
        /* 减小总高度 */
        border-radius: 25px;
        /* 稍微减小圆角 */
@@ -8326,7 +8304,7 @@
    #user-card-foreground-clipper {
        position: absolute;
        /* 【核心恢复】恢复你最初的定位方式，这是形成弧形的关键 */
-       bottom: -117px;
+       bottom: -110px;
        left: 0;
        width: 100%;
        height: 250px;
@@ -8367,7 +8345,7 @@
    #user-card-avatar {
        position: absolute;
        /* 绝对定位，脱离文档流，才能悬浮 */
-       top: 47px;
+       top: 58px;
        /* 头像的垂直中心线位置 */
        left: 50%;
        /* 水平居中 */
@@ -8450,7 +8428,7 @@
    /* --- 【位置调整后】中间App图标容器 --- */
    #main-apps-container {
        position: absolute;
-       top: 290px;
+       top: 340px;
        right: 26.8px;
        width: 160px;
        /* 【修复】稍微增加容器宽度以容纳更大的间距 */
@@ -8471,7 +8449,7 @@
    /* --- 【位置调整后】音乐组件 --- */
    #music-widget {
        position: absolute;
-       top: 460px;
+       top: 510px;
        /* 定位到自定义矩形条下方 */
        right: 30px;
        /* 距离右边框的距离 */
@@ -8505,8 +8483,7 @@
    #bottom-dock {
        position: absolute;
        /* 恢复为 absolute 定位 */
-       /* 【核心修改】将固定的 30px 底部距离，改为 30px 再 “加上” 底部安全距离 */
-       bottom: calc(50px + env(safe-area-inset-bottom));
+       bottom: 30px;
        /* 【核心修改】设置一个正值，让它在布局的底部，而不是屏幕外 */
        left: 50%;
        transform: translateX(-50%);
@@ -8604,21 +8581,25 @@
    /* --- 纪念日组件 --- */
    #days-matter-widget {
        position: absolute;
-       top: 370px;
+       top: 430px;
        /* 【位置微调】与右侧图标顶部对齐 */
        left: 25px;
        width: 158px;
        height: 158px;
        /* --- 【核心修复】多层次样式叠加 --- */
        /* 1. 通透层(光泽) + 底层(基色) */
+       background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.22)),
+           rgba(255, 255, 255, 0.12);
 
-
+       /* 2. 模糊层 (增加模糊度) */
+       backdrop-filter: blur(4px);
+       -webkit-backdrop-filter: blur(4px);
        border-radius: 22px;
        /* 【核心】使用box-shadow模拟不规则描边 */
        box-shadow:
            -0.8px -0.8px 0.5px rgba(245, 245, 245, 0.313) inset,
            /* 左上角亮的内阴影 (模拟粗边) */
-           0.8px 0.8px 1px rgba(255, 255, 255, 0.557) inset;
+           1.4px 1.4px 1px rgba(255, 255, 255, 0.557) inset;
        /* 右下角暗的内阴影 (模拟细边) */
        display: flex;
        flex-direction: column;
@@ -8691,7 +8672,7 @@
    /* --- 自定义矩形条容器 --- */
    #capsule-widgets-container {
        position: absolute;
-       top: 295px;
+       top: 350px;
        /* 定位在纪念日组件下方 */
        left: 30px;
        width: 150px;
@@ -8768,7 +8749,7 @@
    body {
        /* 为背景色变化添加过渡动画 */
        transition: background-color 0.4s ease;
-
+       background-color: #fafafa;
        /* 默认背景色 */
    }
 
@@ -8795,19 +8776,10 @@
        /* 注意：这里的 overflow: auto; 已经被上面的 overflow: hidden; 覆盖掉了 */
    }
 
-   /* 手机框包裹层 (默认状态 = 电脑端画中画长方体) */
+   /* 手机框包裹层 */
    #phone-wrapper {
-       /* 设定固定的手机尺寸基准 */
-       width: 425px;
-       height: 870px;
-       /* 视觉样式 */
-       /* 悬浮阴影 */
-       border-radius: 0px;
-       overflow: hidden;
-       /* 必须加！防止内容溢出圆角 */
-       flex-shrink: 0;
-       /* 防止浏览器窗口太小时挤压它 */
-
+       width: 100%;
+       height: 100%;
        /* 【新增】将此容器设置为绝对定位的基准 */
        position: relative;
        /* 核心：为所有会变化的属性添加平滑过渡动画 */
@@ -8821,9 +8793,9 @@
    /* 当手机框可见时，包裹层的“变身”样式 */
    body.phone-frame-visible #phone-wrapper {
        /* 设定一个固定的手机尺寸，而不是百分比 */
-       width: 425px;
-       height: 870px;
-       min-height: 870px;
+       width: 450px;
+       height: 844px;
+       min-height: 844px;
        /* 【【【核心修复】】】明确禁止flex项目收缩 */
        flex-shrink: 0;
 
@@ -10523,60 +10495,6 @@
        border-color: #353333;
    }
 
-   /* ===================================================================
-           【新增】手机端强制全屏适配 (增强版)
-           将判定范围扩大到 850px，确保所有手机都能全屏
-           =================================================================== */
-   @media (max-width: 860px) {
-
-       /* 1. 强制关闭电脑端的 Flex 居中布局 */
-       html,
-       body {
-           background-color: #fafafa !important;
-           /* 恢复手机背景色 */
-           display: block !important;
-           /* 关掉 Flex */
-           width: 100% !important;
-           height: 100% !important;
-           padding: 0 !important;
-           margin: 0 !important;
-           overflow: hidden !important;
-       }
-
-       /* 2. 强制手机容器撑满屏幕，使用 vw/vh 单位 */
-       #phone-wrapper {
-           width: 100vw !important;
-           /* 强制撑满视口宽度 */
-           height: 100vh !important;
-           /* 强制撑满视口高度 */
-           min-width: 100vw !important;
-           min-height: 100vh !important;
-
-           border-radius: 0 !important;
-           /* 去掉圆角 */
-           box-shadow: none !important;
-           /* 去掉阴影 */
-           margin: 0 !important;
-           padding: 0 !important;
-           top: 0 !important;
-           left: 0 !important;
-           right: 0 !important;
-           bottom: 0 !important;
-
-           transform: none !important;
-           /* 禁止任何缩放 */
-           border: none !important;
-           background-color: #fafafa !important;
-           /* 确保背景连贯 */
-       }
-
-       /* 3. 修复内容层可能存在的圆角 */
-       #phone-screen {
-           border-radius: 0 !important;
-           width: 100% !important;
-           height: 100% !important;
-       }
-   }
 
    /* 
         ===================================================================
