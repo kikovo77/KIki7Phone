@@ -974,7 +974,7 @@
        /* 核心：当内容超出时，允许垂直滚动 */
        background-color: #202020;
        /* 【核心修改】将固定的 110px 底部内边距，改为 110px 再 “加上” 底部安全距离 */
-       padding: 50px 0 calc(110px + env(safe-area-inset-bottom)) 0;
+       padding: 90px 0 calc(110px + env(safe-area-inset-bottom)) 0;
        /* 顶部为状态栏和灵动岛留空，底部为Dock栏留空 */
        opacity: 0;
        /* 【【【修改】】】让桌面默认透明，配合JS做淡入效果 */
@@ -8503,7 +8503,7 @@
        position: absolute;
        /* 恢复为 absolute 定位 */
        /* 【核心修改】将固定的 30px 底部距离，改为 30px 再 “加上” 底部安全距离 */
-       bottom: calc(50px + env(safe-area-inset-bottom));
+       bottom: calc(30px + env(safe-area-inset-bottom));
        /* 【核心修改】设置一个正值，让它在布局的底部，而不是屏幕外 */
        left: 50%;
        transform: translateX(-50%);
