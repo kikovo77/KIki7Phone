@@ -29,10 +29,16 @@
 
    #phone-screen {
        width: 100%;
-       height: 100%;
+       /* 让屏幕高度包含底部安全区域，修复空白 */
+       height: 100vh;
+       height: -webkit-fill-available;
        position: relative;
        overflow: hidden;
        background-color: #fafafa;
+       /* 继承body的安全区域内边距，保留占位 */
+       padding-top: env(safe-area-inset-top);
+       padding-bottom: env(safe-area-inset-bottom);
+       box-sizing: border-box;
    }
 
    /* 【新增】状态栏样式 */
