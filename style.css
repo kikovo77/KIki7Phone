@@ -8794,7 +8794,6 @@
        box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
        /* 悬浮阴影 */
        border-radius: 0px;
-       /* 稍微圆一点的角，好看 */
        overflow: hidden;
        /* 必须加！防止内容溢出圆角 */
        flex-shrink: 0;
@@ -8808,44 +8807,6 @@
            background-color 0.4s ease-in-out, width 0.4s ease-in-out, height 0.4s ease-in-out;
        /* 【新增】为子元素的3D变换（比如translateZ）做准备，有助于优化渲染 */
        transform-style: preserve-3d;
-   }
-
-   /* ===================================================================
-           【新增】手机端强制全屏适配 (核心修复)
-           当屏幕宽度小于 500px (手机) 时，强制覆盖上面的画中画设置
-           =================================================================== */
-   @media (max-width: 500px) {
-
-       /* 1. 恢复 Body 为普通块级布局，去掉粉色背景 */
-       body {
-           background-color: #fafafa !important;
-           display: block !important;
-           padding: 0 !important;
-           margin: 0 !important;
-       }
-
-       /* 2. 强制手机容器撑满屏幕，去掉圆角和阴影 */
-       #phone-wrapper,
-       body.phone-frame-visible #phone-wrapper {
-           width: 100% !important;
-           height: 100% !important;
-           min-height: 100% !important;
-           border-radius: 0 !important;
-           box-shadow: none !important;
-           margin: 0 !important;
-           transform: none !important;
-           /* 禁止手机端的任何缩放 */
-           padding: 0 !important;
-           /* 移除手机框模式可能带来的内边距 */
-           border: none !important;
-           /* 移除边框 */
-           background-color: transparent !important;
-       }
-
-       /* 3. 确保屏幕内容层也撑满 */
-       #phone-screen {
-           border-radius: 0 !important;
-       }
    }
 
    /* 当手机框可见时，包裹层的“变身”样式 */
