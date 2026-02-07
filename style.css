@@ -36,9 +36,6 @@
        overflow: hidden;
        background-color: #f70d0d;
        /* 继承body的安全区域内边距，保留占位 */
-       padding-top: env(safe-area-inset-top);
-       padding-bottom: env(safe-area-inset-bottom);
-       box-sizing: border-box;
    }
 
    /* 【新增】状态栏样式 */
