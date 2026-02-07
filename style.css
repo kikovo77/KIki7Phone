@@ -6161,7 +6161,7 @@
        -webkit-backdrop-filter: blur(4px) !important;
        border-bottom: 0.6px solid #dcdcdc !important;
        height: 46px !important;
-       padding-top: px !important;
+       padding-top: 62px !important;
    }
 
    /* 顶栏标题：保持微信主题的居中和样式 */
@@ -6170,7 +6170,7 @@
        left: 49.1%;
        top: 50%;
        transform: translate(-50%, -50%);
-       padding-top: 15px;
+       padding-top: 40px;
        color: #202020 !important;
        font-size: 16px !important;
        font-weight: 500 !important;
@@ -6433,7 +6433,7 @@
        /* 开启绝对定位，让它浮动起来 */
        left: 37px;
        /* 距离左侧的距离，您可以微调这个值 */
-       top: 39px;
+       top: 77px;
        /* 距离顶部的距离，您可以微调这个值 */
        font-size: 14.8px;
        /* 与标题一样的大小 */
@@ -6940,7 +6940,7 @@
 
        /* --- 【【【全新的】】】“在线/正在输入”状态独立微调区 --- */
        /* 说明：这里的 top 和 left 值完全复制自您旧的 #chat-contact-status 样式 */
-       top: 60px;
+       top: 86px;
        left: calc(50% + -3px);
 
        /* --- 容器尺寸与字体样式 --- */
