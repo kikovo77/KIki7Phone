@@ -799,166 +799,6 @@
    }
 
 
-   /*
-===================================================================
- 4. 特定页面/屏幕样式 (Page-Specific Styles)
-===================================================================
-*/
-   /* --- 4.1 锁屏页面 (#lock-screen) --- */
-
-   /* 锁屏页面的主容器 */
-   #lock-screen {
-       background-color: #202020;
-       /* 默认纯色背景 */
-       background-size: cover;
-       /* 背景图铺满 */
-       background-position: center;
-       /* 背景图居中 */
-       z-index: 1000;
-       /* 确保在最顶层 */
-       display: flex;
-       /* 初始时显示 */
-       flex-direction: column;
-       /* 内部元素垂直排列 */
-       justify-content: space-between;
-       /* 用于垂直分布元素（如时间在顶部，home bar在底部） */
-       align-items: center;
-       /* 水平居中 */
-       transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
-       /* 【【【核心修改：注入最终的“快速划走”动画】】】 */
-       touch-action: none;
-       /* 禁用默认的浏览器触摸行为，如滚动，为自定义手势做准备 */
-       will-change: transform, opacity;
-       /* 【动画性能优化】告诉浏览器这些属性即将变化 */
-   }
-
-   /* 锁屏正在被拖动或解锁过程中的状态 */
-   #lock-screen.unlocking,
-   #lock-screen.pulling-down {
-       transition: none;
-       /* 【【【新增】】】移除过渡，让JS实时控制位置 */
-   }
-
-   /* 解锁完成后的最终状态 */
-   #lock-screen.unlocked {
-       transform: translateY(-100%);
-       /* 向上移出屏幕 */
-       opacity: 0;
-       /* 变为透明 */
-       pointer-events: none;
-       /* 【【【核心修改】】】动画结束后不再响应点击，允许操作下方桌面 */
-   }
-
-   /* 锁屏顶部的状态栏 */
-   .lock-screen-status-bar {
-       position: absolute;
-       /* 绝对定位 */
-       top: -13px;
-       left: 0;
-       width: 100%;
-       height: 76px;
-       box-sizing: border-box;
-       padding: 0 15px;
-       display: none;
-       justify-content: flex-end;
-       /* 只需右对齐图标 */
-       align-items: center;
-       pointer-events: none;
-       /* 让状态栏不影响交互 */
-   }
-
-   /* 【【【新增】】】锁屏左上角姓名和图标的容器 */
-   .lock-screen-top-left {
-       position: absolute;
-       top: 15px;
-       /* 与右侧图标垂直对齐 */
-       left: 28px;
-       /* 左侧边距 */
-       display: none;
-       align-items: center;
-       gap: 8px;
-       /* 名字和心形的间距 */
-       font-size: 15px;
-       font-weight: 550;
-       color: #4e4e4e;
-       z-index: 1001;
-       /* 确保在最顶层 */
-   }
-
-   /* 锁屏上的可编辑名字 */
-   #lock-screen-name {
-       cursor: text;
-       /* 提示可点击 */
-   }
-
-   /* 锁屏状态栏右侧的图标容器 */
-   #lock-screen-status-icons {
-       display: flex;
-       align-items: center;
-       gap: 14.7px;
-   }
-
-   /* 【【【新增】】】确保锁屏图标的颜色正确 */
-   #lock-screen-status-icons svg path {
-       fill: #4e4e4e;
-   }
-
-   /* 锁屏中间的日期和小组件 */
-   .lock-screen-date-widget {
-       position: absolute;
-       top: 68px;
-       /* 根据效果图微调 */
-       left: 0;
-       /* 【新增】从左侧0点开始 */
-       width: 100%;
-       /* 【新增】宽度撑满 */
-       text-align: center;
-       /* 【新增】内部文字居中 */
-       color: #4f4f4f;
-       font-size: 17.2px;
-       font-weight: 500;
-   }
-
-   /* 锁屏上的可编辑自定义文案 */
-   #lock-screen-custom-text {
-       cursor: text;
-       /* 提示可点击 */
-   }
-
-   /* 锁屏上的大时间显示 */
-   #lock-screen-time {
-       position: absolute;
-       top: 86px;
-       /* 根据效果图微调 */
-       left: 0;
-       /* 【新增】从左侧0点开始 */
-       width: 100%;
-       /* 【新增】宽度撑满 */
-       text-align: center;
-       /* 【新增】内部文字居中 */
-       font-size: 93px;
-       /* 大字体 */
-       font-weight: 550;
-       /* 稍粗 */
-       color: #4f4f4f;
-       letter-spacing: 1px;
-       /* 字体间距微调 */
-   }
-
-   /* 锁屏上其他文字元素的通用容器 */
-   .lock-screen-words span {
-       position: absolute;
-   }
-
-   /* 锁屏底部的 Home 指示条 */
-   .home-bar {
-       position: absolute;
-       bottom: 12px;
-       width: 135px;
-       height: 5px;
-       background-color: #3e3e3e;
-       border-radius: 2.5px;
-   }
 
    /* --- 4.2 桌面 (#home-screen) --- */
 
@@ -6170,7 +6010,7 @@
        left: 49.1%;
        top: 50%;
        transform: translate(-50%, -50%);
-       padding-top: 40px;
+       padding-top: 15px;
        color: #202020 !important;
        font-size: 16px !important;
        font-weight: 500 !important;
@@ -6287,6 +6127,7 @@
        color: #000000 !important;
        font-size: 16px !important;
        top: -7px !important;
+       right: -12px !important;
        padding: 5px 5px 8px 8px !important;
        min-height: 2px !important;
    }
@@ -6432,7 +6273,7 @@
        /* 开启绝对定位，让它浮动起来 */
        left: 37px;
        /* 距离左侧的距离，您可以微调这个值 */
-       top: 77px;
+       top: 39px;
        /* 距离顶部的距离，您可以微调这个值 */
        font-size: 14.8px;
        /* 与标题一样的大小 */
@@ -6939,7 +6780,7 @@
 
        /* --- 【【【全新的】】】“在线/正在输入”状态独立微调区 --- */
        /* 说明：这里的 top 和 left 值完全复制自您旧的 #chat-contact-status 样式 */
-       top: 86px;
+       top: 60px;
        left: calc(50% + -3px);
 
        /* --- 容器尺寸与字体样式 --- */
@@ -10521,7 +10362,7 @@
            【新增】手机端强制全屏适配 (增强版)
            将判定范围扩大到 850px，确保所有手机都能全屏
            =================================================================== */
-   @media (max-width: 860px) {
+   @media (max-width: 860px) and (pointer: coarse) {
 
        /* 1. 强制关闭电脑端的 Flex 居中布局 */
        html,
@@ -10568,6 +10409,25 @@
            width: 100% !important;
            height: 100% !important;
        }
+   }
+
+   /* iMessage 正在输入呼吸灯效果 */
+   @keyframes typing-slow-blink {
+
+       0%,
+       100% {
+           opacity: 1;
+       }
+
+       50% {
+           opacity: 0.4;
+       }
+   }
+
+   .typing-animation {
+       animation: typing-slow-blink 2s ease-in-out infinite;
+       color: #8e8e93 !important;
+       /* 调整为更接近原生的灰色 */
    }
 
    /* 

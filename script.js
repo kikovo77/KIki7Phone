@@ -470,490 +470,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveDesktopWallpaperBtn = document.getElementById('save-desktop-wallpaper-btn');
     const appIconSettingsContainer = document.getElementById('app-icon-settings-container');
 
-    // ===================================================================
-    // 【【【全新】】】锁屏功能专属变量
-    // ===================================================================
-    const lockScreen = document.getElementById('lock-screen');
-    const lockScreenTime = document.getElementById('lock-screen-time');
-    const lockScreenDate = document.getElementById('lock-screen-date');
-    const lockScreenCustomText = document.getElementById('lock-screen-custom-text');
-    const lockScreenStatusIcons = document.getElementById('lock-screen-status-icons');
 
-    const openLockscreenWallpaperModalBtn = document.getElementById('open-lockscreen-wallpaper-modal-btn');
-    const lockscreenWallpaperModal = document.getElementById('lockscreen-wallpaper-modal');
-    const lockscreenWallpaperPreview = document.getElementById('lockscreen-wallpaper-preview');
-    const removeLockscreenWallpaperBtn = document.getElementById('remove-lockscreen-wallpaper-btn');
-    const lockscreenWallpaperUploadInput = document.getElementById('lockscreen-wallpaper-upload-input');
-    const saveLockscreenWallpaperBtn = document.getElementById('save-lockscreen-wallpaper-btn');
 
-    let lockScreenSettings = {}; // 用于存储锁屏的壁纸和自定义文案
-
-    // 【【【新增】】】获取锁屏左上角名字的元素
-    const lockScreenName = document.getElementById('lock-screen-name');
-
-    // --- 滑动解锁相关的状态变量 ---
-    let touchStartY = 0;
-    let currentTranslateY = 0;
-    let isUnlocking = false;
-
-
-    // --- 【【【新增】】】下拉锁屏相关的状态变量 ---
-    const homeScreenForPullDown = document.getElementById('home-screen'); // 获取桌面元素
-    let isPullingDown = false;      // 是否正在执行下拉操作
-    let pullDownStartY = 0;         // 下拉开始的Y坐标
-    let currentPullDownY = 0;       // 当前下拉的距离
-
-    // --- 【【【新增】】】为桌面添加下拉手势监听 ---
-
-    // --- 封装下拉逻辑以便复用 ---
-    const startPullDown = (event) => {
-        const homeScreen = document.getElementById('home-screen');
-        const phoneWrapper = document.getElementById('phone-wrapper');
-        const rect = phoneWrapper.getBoundingClientRect(); // 获取手机框的实时位置和尺寸
-
-        // 【【【核心逻辑重构】】】
-        // 1. 检查当前是否在桌面
-        // 2. 检查锁屏是否已解锁
-        // 3. 检查手势是否发生在手机框内部
-        // 4. 检查手势是否从手机框的顶部区域（顶部向下50像素）开始
-        if (homeScreen.classList.contains('active') &&
-            lockScreen.classList.contains('unlocked') &&
-            event.clientX >= rect.left && event.clientX <= rect.right &&
-            event.clientY >= rect.top && event.clientY < rect.top + 50) {
-
-            isPullingDown = true;
-            pullDownStartY = event.clientY; // 使用事件的全局Y坐标
-            lockScreen.classList.add('active');
-            lockScreen.classList.remove('unlocked');
-            lockScreen.classList.add('pulling-down');
-            return true;
-        }
-        return false;
-    };
-
-    const movePullDown = (y) => {
-        if (!isPullingDown) return;
-        let diffY = y - pullDownStartY;
-        if (diffY < 0) diffY = 0;
-        currentPullDownY = diffY;
-        const screenHeight = window.innerHeight;
-        const translateY = Math.min(0, diffY - screenHeight);
-        const opacity = Math.min(1, (diffY / (screenHeight / 2)));
-        lockScreen.style.transform = `translateY(${translateY}px)`;
-        lockScreen.style.opacity = opacity;
-        const maxBlur = 10;
-        const blurValue = Math.min(maxBlur, (diffY / screenHeight) * maxBlur * 2);
-        homeScreenForPullDown.style.filter = `blur(${blurValue}px)`;
-    };
-
-    const endPullDown = () => {
-        if (!isPullingDown) return;
-        lockScreen.classList.remove('pulling-down');
-        const screenHeight = window.innerHeight;
-        if (currentPullDownY > screenHeight / 4) {
-            isUnlocking = false;
-            lockScreen.style.transform = 'translateY(0px)';
-            lockScreen.style.opacity = '1';
-            lockScreen.style.pointerEvents = 'auto';
-            homeScreenForPullDown.style.filter = 'blur(0px)';
-            homeScreenForPullDown.style.opacity = '0';
-            homeScreenForPullDown.classList.remove('active');
-        } else {
-            lockScreen.style.transform = 'translateY(-100%)';
-            lockScreen.style.opacity = '0';
-            lockScreen.style.pointerEvents = 'none';
-            homeScreenForPullDown.style.filter = 'blur(0px)';
-            lockScreen.addEventListener('transitionend', () => {
-                lockScreen.classList.add('unlocked');
-                lockScreen.classList.remove('active');
-            }, { once: true });
-        }
-        isPullingDown = false;
-        pullDownStartY = 0;
-        currentPullDownY = 0;
-    };
-
-    // --- 【【【核心修改】】】 将事件监听器绑定到全局 window 对象 ---
-
-    // --- 触摸事件监听 ---
-    window.addEventListener('touchstart', (e) => {
-        startPullDown(e.touches[0]);
-    }, { passive: true });
-
-    window.addEventListener('touchmove', (e) => {
-        if (isPullingDown) {
-            e.preventDefault();
-            movePullDown(e.touches[0].clientY);
-        }
-    }, { passive: false });
-
-    window.addEventListener('touchend', endPullDown);
-    window.addEventListener('touchcancel', endPullDown);
-
-    // --- 鼠标事件监听 ---
-    window.addEventListener('mousedown', (e) => {
-        if (startPullDown(e)) { // 直接传递鼠标事件对象
-            const handleMouseMove = (ev) => movePullDown(ev.clientY);
-            const handleMouseUp = () => {
-                endPullDown();
-                window.removeEventListener('mousemove', handleMouseMove);
-                window.removeEventListener('mouseup', handleMouseUp);
-            };
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        }
-    });
-
-    // ===================================================================
-    // 【【【全新】】】锁屏功能核心函数
-    // ===================================================================
-
-    /**
-     * 保存锁屏设置到 IndexedDB
-     */
-    async function saveLockScreenSettings() {
-        try {
-            await db.set('lockScreenSettings', lockScreenSettings);
-        } catch (error) {
-            console.error("Failed to save lockScreenSettings to IndexedDB:", error);
-        }
-    }
-
-    /**
-     * 从 IndexedDB 加载锁屏设置
-     */
-    async function loadLockScreenSettings() {
-        const savedSettings = await db.get('lockScreenSettings') || {};
-        lockScreenSettings = {
-            wallpaper: savedSettings.wallpaper || '',
-            customText: savedSettings.customText || '在此输入自定义文案...',
-            name: savedSettings.name || 'name' // 【新增】加载名字，默认值为'name'
-        };
-    }
-
-    /**
-     * 将加载的设置应用到锁屏界面
-     */
-    function applyLockScreenSettings() {
-        // 应用壁纸
-        if (lockScreenSettings.wallpaper) {
-            lockScreen.style.backgroundImage = `url(${lockScreenSettings.wallpaper})`;
-            lockScreen.style.backgroundColor = ''; // 清除纯色背景
-        } else {
-            lockScreen.style.backgroundImage = 'none';
-            lockScreen.style.backgroundColor = '#202020'; // 恢复默认纯色
-        }
-        // 应用自定义文案
-        lockScreenCustomText.textContent = lockScreenSettings.customText;
-        // 【新增】应用名字
-        lockScreenName.textContent = lockScreenSettings.name;
-    }
-
-    /**
-     * 更新锁屏上的时间和日期
-     */
-    function updateLockScreenTimeAndDate() {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const month = now.getMonth() + 1;
-        const day = now.getDate();
-        const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-        const weekday = weekdays[now.getDay()];
-
-        if (lockScreenTime) lockScreenTime.textContent = `${hours}:${minutes}`;
-        if (lockScreenDate) lockScreenDate.textContent = `${month}月${day}日 ${weekday}`;
-    }
-
-    /**
-     * 处理锁屏上滑：手指按下
-     */
-    function handleTouchStart(e) {
-        if (isUnlocking) return;
-        touchStartY = e.touches[0].clientY;
-        lockScreen.classList.add('unlocking');
-
-        // 【BUG修复】不仅要改变透明度，还要把桌面设为 active 状态，准备显示
-        const homeScreen = document.getElementById('home-screen');
-        homeScreen.classList.add('active');
-        homeScreen.style.opacity = '1';
-    }
-
-    /**
-     * 处理锁屏上滑：手指移动
-     */
-    function handleTouchMove(e) {
-        if (isUnlocking || touchStartY === 0) return;
-
-        const currentY = e.touches[0].clientY;
-        let diffY = touchStartY - currentY;
-
-        // 只允许上滑，不允许向下滑动超过原始位置
-        if (diffY < 0) diffY = 0;
-        currentTranslateY = diffY;
-
-        const screenHeight = window.innerHeight;
-        // 计算滑动进度的百分比 (0到1之间)
-        const swipeProgress = diffY / screenHeight;
-
-        // 【【【核心修改1：非线性透明度】】】
-        // 我们使用 swipeProgress 的三次方 (Math.pow(swipeProgress, 3))。
-        // 这样，在滑动刚开始时 (swipeProgress很小)，透明度的降低会非常缓慢。
-        // 随着滑动距离增加，透明度会加速降低，完美复刻iOS的“先慢后快”效果。
-        const opacity = Math.max(0, 1 - Math.pow(swipeProgress, 3) * 2);
-
-        // 【【【核心修改2：动态模糊效果】】】
-        // 定义一个最大模糊值，比如20px
-        const maxBlur = 20;
-        // 将滑动进度映射到模糊值上，同样使用平方来制造“先慢后快”的模糊效果。
-        const blurValue = Math.min(maxBlur, Math.pow(swipeProgress, 2) * maxBlur * 1.5);
-
-        // 应用位移和透明度到锁屏
-        lockScreen.style.transform = `translateY(-${diffY}px)`;
-        lockScreen.style.opacity = opacity;
-
-        // 【【【新增】】】将动态计算出的模糊效果应用到桌面
-        document.getElementById('home-screen').style.filter = `blur(${blurValue}px)`;
-    }
-
-    function handleTouchEnd() {
-        if (isUnlocking || touchStartY === 0) return;
-
-        const homeScreen = document.getElementById('home-screen');
-        lockScreen.classList.remove('unlocking'); // 重新开启CSS动画
-        const screenHeight = window.innerHeight;
-
-        // 如果滑动距离超过屏幕高度的 1/3，则判定为解锁
-        if (currentTranslateY > screenHeight / 3) {
-            isUnlocking = true;
-
-            lockScreen.style.transform = 'translateY(-100%)';
-            lockScreen.style.opacity = '0';
-            lockScreen.style.pointerEvents = 'none';
-
-            homeScreen.style.filter = 'blur(0px)';
-            homeScreen.style.opacity = '1';
-
-            lockScreen.addEventListener('transitionend', () => {
-                lockScreen.classList.add('unlocked');
-                // 【BUG修复】解锁完成后，正式移除锁屏的 active 状态
-                lockScreen.classList.remove('active');
-            }, { once: true });
-
-        } else { // 否则，动画弹回原位
-            lockScreen.style.transform = 'translateY(0px)';
-            lockScreen.style.opacity = 1;
-
-            // 【BUG修复】如果未解锁，则移除桌面的 active 状态，让它彻底隐藏
-            homeScreen.style.opacity = '0';
-            homeScreen.style.filter = 'blur(0px)';
-            homeScreen.classList.remove('active');
-        }
-
-        // 重置滑动状态
-        touchStartY = 0;
-        currentTranslateY = 0;
-    }
-
-    // 【【【核心修改】】】将事件监听器绑定到新的 wrapper 上
-    const customTextWrapper = document.getElementById('lock-screen-custom-text-wrapper');
-
-    // 为 wrapper 添加触摸和鼠标事件监听，阻止滑动解锁手势冲突
-    customTextWrapper.addEventListener('touchstart', (e) => {
-        e.stopPropagation();
-    });
-    customTextWrapper.addEventListener('mousedown', (e) => {
-        e.stopPropagation();
-    });
-
-    // 绑定自定义文案编辑事件
-    customTextWrapper.addEventListener('click', () => {
-        const tempInput = customTextWrapper.parentNode.querySelector('.temp-edit-input');
-        if (tempInput) return;
-
-        const originalValue = (lockScreenSettings.customText === '在此输入自定义文案...') ? '' : lockScreenSettings.customText;
-
-        // 隐藏的是 wrapper 里的 span
-        const textSpan = document.getElementById('lock-screen-custom-text');
-        textSpan.style.display = 'none';
-
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = originalValue;
-        input.className = 'temp-edit-input';
-        input.style.color = '#ccc';
-        input.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-        input.style.border = '1px solid #555';
-
-        // 【【【核心新增】】】为新创建的输入框也添加触摸和鼠标事件，阻止冲突
-        input.addEventListener('touchstart', (e) => {
-            e.stopPropagation();
-        });
-        input.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-        });
-
-        customTextWrapper.appendChild(input);
-        input.focus();
-        input.select();
-
-        const save = () => {
-            lockScreenSettings.customText = input.value.trim() || '在此输入自定义文案...';
-            saveLockScreenSettings();
-            applyLockScreenSettings();
-            input.remove();
-            textSpan.style.display = 'inline'; // 恢复显示 span
-        };
-        input.addEventListener('blur', save);
-        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') input.blur(); });
-    });
-
-    // 【【【全新】】】为锁屏名字区域绑定编辑功能
-    lockScreenName.addEventListener('touchstart', (e) => {
-        e.stopPropagation();
-    });
-    lockScreenName.addEventListener('mousedown', (e) => {
-        e.stopPropagation();
-    });
-
-    lockScreenName.addEventListener('click', () => {
-        const tempInput = lockScreenName.parentNode.querySelector('.temp-edit-input');
-        if (tempInput) return;
-
-        const originalValue = (lockScreenSettings.name === 'name') ? '' : lockScreenSettings.name;
-
-        lockScreenName.style.display = 'none';
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = originalValue;
-        input.className = 'temp-edit-input';
-        // 样式微调以适应左上角
-        input.style.textAlign = 'left';
-        input.style.color = '#4e4e4e';
-        input.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-        input.style.border = '1px solid #ccc';
-
-        input.addEventListener('touchstart', (e) => {
-            e.stopPropagation();
-        });
-        input.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-        });
-
-        lockScreenName.parentNode.insertBefore(input, lockScreenName.nextSibling);
-        input.focus();
-        input.select();
-
-        const save = () => {
-            // 【核心：长度限制】保存时，只取前5个字符
-            const newName = input.value.trim().slice(0, 5);
-            lockScreenSettings.name = newName || 'name'; // 如果为空，则恢复默认名
-            saveLockScreenSettings();
-            applyLockScreenSettings();
-            input.remove();
-            lockScreenName.style.display = 'inline';
-        };
-        input.addEventListener('blur', save);
-        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') input.blur(); });
-    });
-
-    // ===================================================================
-    // 【【【全新】】】锁屏功能事件监听 (兼容鼠标)
-    // ===================================================================
-    // --- 触摸事件 ---
-    lockScreen.addEventListener('touchstart', handleTouchStart, { passive: true });
-    lockScreen.addEventListener('touchmove', handleTouchMove, { passive: false });
-    lockScreen.addEventListener('touchend', handleTouchEnd);
-    lockScreen.addEventListener('touchcancel', handleTouchEnd);
-
-    // --- 【【【新增】】】鼠标事件 ---
-    lockScreen.addEventListener('mousedown', (e) => {
-        // 将鼠标事件包装成类似触摸事件的结构
-        handleTouchStart({ touches: [{ clientY: e.clientY }] });
-
-        // 在整个窗口上监听鼠标移动和抬起，以防鼠标移出锁屏区域
-        const handleMouseMoveWrapper = (ev) => handleTouchMove({ touches: [{ clientY: ev.clientY }], preventDefault: () => ev.preventDefault() });
-        const handleMouseUpWrapper = () => {
-            handleTouchEnd();
-            window.removeEventListener('mousemove', handleMouseMoveWrapper);
-            window.removeEventListener('mouseup', handleMouseUpWrapper);
-        };
-
-        window.addEventListener('mousemove', handleMouseMoveWrapper);
-        window.addEventListener('mouseup', handleMouseUpWrapper);
-    });
-
-    // 绑定自定义文案编辑事件
-    lockScreenCustomText.addEventListener('click', () => {
-        const tempInput = lockScreenCustomText.parentNode.querySelector('.temp-edit-input');
-        if (tempInput) return;
-
-        const originalValue = (lockScreenSettings.customText === '在此输入自定义文案...') ? '' : lockScreenSettings.customText;
-
-        lockScreenCustomText.style.display = 'none';
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = originalValue;
-        input.className = 'temp-edit-input';
-        input.style.color = '#ccc'; // 确保输入时颜色也协调
-        input.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-        input.style.border = '1px solid #555';
-
-        lockScreenCustomText.parentNode.insertBefore(input, lockScreenCustomText.nextSibling);
-        input.focus();
-        input.select();
-
-        const save = () => {
-            lockScreenSettings.customText = input.value.trim() || '在此输入自定义文案...';
-            saveLockScreenSettings();
-            applyLockScreenSettings();
-            input.remove();
-            lockScreenCustomText.style.display = 'inline';
-        };
-        input.addEventListener('blur', save);
-        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') input.blur(); });
-    });
-
-    // 绑定锁屏壁纸更换功能
-    openLockscreenWallpaperModalBtn.addEventListener('click', () => {
-        if (lockScreenSettings.wallpaper) {
-            lockscreenWallpaperPreview.style.backgroundImage = `url(${lockScreenSettings.wallpaper})`;
-            removeLockscreenWallpaperBtn.style.display = 'block';
-        } else {
-            lockscreenWallpaperPreview.style.backgroundImage = 'none';
-            removeLockscreenWallpaperBtn.style.display = 'none';
-        }
-        lockscreenWallpaperModal.classList.add('visible');
-    });
-
-    lockscreenWallpaperPreview.addEventListener('click', () => lockscreenWallpaperUploadInput.click());
-
-    lockscreenWallpaperUploadInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-            const imageUrl = e.target.result;
-            lockscreenWallpaperPreview.style.backgroundImage = `url(${imageUrl})`;
-            removeLockscreenWallpaperBtn.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-        lockscreenWallpaperUploadInput.value = '';
-    });
-
-    removeLockscreenWallpaperBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        lockscreenWallpaperPreview.style.backgroundImage = 'none';
-        removeLockscreenWallpaperBtn.style.display = 'none';
-    });
-
-    saveLockscreenWallpaperBtn.addEventListener('click', () => {
-        const bgStyle = lockscreenWallpaperPreview.style.backgroundImage;
-        lockScreenSettings.wallpaper = bgStyle.startsWith('url') ? bgStyle.slice(5, -2) : '';
-        saveLockScreenSettings();
-        applyLockScreenSettings();
-        lockscreenWallpaperModal.classList.remove('visible');
-    });
     // ===================================================================
     // 【全新 V4.3】“Me”页面专属变量
     // ===================================================================
@@ -3428,6 +2946,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         generateBtn.disabled = true;
 
+        // --- 新增：正在输入中效果 ---
+        const originalName = chatContactName.textContent; // 记住原名
+        chatContactName.textContent = "正在输入中...";
+        chatContactName.classList.add('typing-animation');
+
         const getAssociatedContent = (id, type, visitedIds = new Set()) => {
             const uniqueId = `${type}_${id}`;
             if (visitedIds.has(uniqueId)) return { before: '', after: '' };
@@ -3801,7 +3324,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 再次获取最新的 chat 对象，确保数据是最新的
                 const currentChat = chats.find(c => c.id === originalChatId);
                 if (!currentChat) continue;
-
+                // 当收到并开始处理第一条回复时，恢复名字
+                if (i === 0) {
+                    chatContactName.textContent = chat.settings.aiName || chat.name;
+                    chatContactName.classList.remove('typing-animation');
+                }
                 // 消息之间的延迟动画
                 if (i > 0) {
                     if (isPopTheme && currentlyVisibleChatId === originalChatId) {
@@ -3962,6 +3489,9 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`获取回复失败：${error.message}`);
             const errorMessage = { role: 'assistant', content: `[错误: ${error.message}]`, timestamp: Date.now(), id: 'error_' + Date.now() };
             const chat = chats.find(c => c.id === activeChatId);
+            // 报错时也要恢复名字
+            chatContactName.textContent = chat.settings.aiName || chat.name;
+            chatContactName.classList.remove('typing-animation');
             if (chat) {
                 chat.history.push(errorMessage);
                 appendMessage(errorMessage);
@@ -7663,7 +7193,6 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadPhoneFrameSetting();
         await loadAndApplyTheme(); // 【【【新增】】】加载并应用保存的主题
         await loadMePageData(); // 【【【全新】】】 加载“Me”页面的数据
-        await loadLockScreenSettings(); // 【【【新增】】】 加载锁屏数据
         applyMePageData(); // 【【【全新】】】 将加载的数据应用到UI上
 
         // --- 【【【全新】】】为插入弹窗绑定事件 ---
@@ -7701,7 +7230,6 @@ document.addEventListener('DOMContentLoaded', () => {
         applyGlobalFontStyles();
         await loadAndApplyCoupleTheme(); // 这个函数现在也应该是 async 的
         applyDesktopSettings();        // 这个函数会调用 applyDesktopIconSettings
-        applyLockScreenSettings();     // 【【【新增】】】 应用锁屏设置
         updateTotalUnreadBadge(); // 【【【核心新增】】】 初始化时就计算并显示总未读数
         renderStatusFeed(); // 【【【全新】】】 初始化时渲染动态列表
 
@@ -7836,18 +7364,9 @@ document.addEventListener('DOMContentLoaded', () => {
             voiceToTextCloseBtn.addEventListener('click', () => voiceToTextModal.classList.remove('visible'));
         }
 
-        // 【【【核心修改】】】 初始时显示锁屏，而不是桌面
-        document.getElementById('home-screen').classList.remove('active');
-        document.getElementById('lock-screen').classList.add('active');
-
-        // 【【【新增】】】确保桌面在初始时透明度为0，且拥有 active 类，以便在后台准备就绪
-        // 【BUG修复】不再手动添加 active 类，交由 showScreen 和解锁逻辑管理
-        const homeScreen = document.getElementById('home-screen');
-        homeScreen.style.opacity = '0';
-
-
-        updateLockScreenTimeAndDate(); // 立即更新一次锁屏时间
-        setInterval(updateLockScreenTimeAndDate, 1000); // 每秒更新
+        // 初始时直接显示桌面
+        document.getElementById('home-screen').classList.add('active');
+        document.getElementById('home-screen').style.opacity = '1';
 
         // 【【【新增】】】初始化推送通知功能
         initPushNotifications();
