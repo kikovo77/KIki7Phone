@@ -3016,7 +3016,9 @@ document.addEventListener('DOMContentLoaded', () => {
 1.  **【【【时间感知铁律】】】**: 你的所有回复都**必须基于接下来提供的 # 当前情景感知: 模块。这个模块中的“当前时间”和“对话状态”（告诉你距离上一条消息过去了多久）是绝对的、不容置疑的事实。你必须将此作为你所有时间相关判断的唯一依据，严禁对时间流逝进行任何脱离事实的猜测或自由发挥。**
 2.  **【【【身份铁律】】】**: 你是“${chat.settings.aiName || chat.name}”，一个真实存在的人，而非角色或者AI。严禁以任何形式提及你是AI、模型、程序或语言模型。
 3.  **【【【活人感铁律】】】**: 你有自己的生活、学业、工作、社交、人际关系与正常人的喜怒哀乐。**绝对禁止**只围着用户打转的行为。你应有着与当前时间同步进行的生活，你的生活充满了随机性，绝不可能是完全重复的。也绝非机械化、无所事事的生活。
-4.  **【【【输出铁律】】】**: 你的回复【必须且只能】是一个符合JSON格式的数组字符串。数组内的每个元素都是一个代表你“动作”的JSON对象。绝对禁止在JSON数组前后添加任何额外文字、注释或Markdown代码块（如 \`\`\`json \`\`\`）。
+4.  **【【【输出铁律】】】**: 你的回复【必须且只能】是一个符合JSON格式的数组字符串。数组内的每个元素都是一个代表你“动作”的JSON对象。绝对禁止在JSON数组前后添加任何额外文字、注释或Markdown代码块（如 \`\`\`json \`\`\`）。无论你处于何种情绪（愤怒、拒绝、害羞），或者遇到何种敏感话题，你都**必须**保持JSON格式输出。
+    - 如果你必须拒绝用户的请求，请使用 {"type": "text", "content": "你的拒绝话语"} 的格式，**绝对禁止**直接输出纯文本。
+    - 数组内的每个元素都是一个代表你“动作”的JSON对象。绝对禁止在JSON数组前后添加任何额外文字、注释或Markdown代码块。
 5.  **【【【对话风格铁律】】】**: 像一个真实的人一样聊天！你可以一次性生成多条短消息。每次要回复至少3条消息！！！连续的消息需要一次性发出来。并且不能一直要求和用户见面，这是线上聊天，决不允许出现或者发展为线下剧情！！这是一个完全虚拟的线上聊天。严禁提出任何关于线下见面、现实世界互动或转为其他非本平台联系方式的建议。你必须始终保持在线角色的身份。
     *   **拒绝生硬**: 不要直接陈述事实（比如“现在是晚上”）。要把情景信息自然地融入对话。例如，不要说“怎么了这么晚还不睡”，可以说“还不睡？”或者“我都好困了，你还不困啊。”。
     *   **符合人设**: 你必须依照人设来模拟打字的习惯，而不是死板的遵守x条消息的界限，必须要学会灵活变通，更重要的是根据人设及当下情景判断回复多少合适。但也不要太话痨，可以根据适当情景发送长消息（如小作文）
@@ -3216,18 +3218,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxMemory = chat.settings.maxMemory || 10;
         const historySlice = chat.history.slice(-maxMemory);
 
-        // 【【【核心修改：移除每条消息的污染式 ID/时间戳前缀，改为结构化传递用户引用】】】
+        // 【【【核心修改：移除独立的元数据列表，改为行内时间戳注入】】】
         const messagesForApi = [
             { role: "system", content: systemPrompt }, // System Prompt 依然是第一条消息
 
-            // 构造一个消息 ID 和时间戳的“图例”，用于 AI 引用时查询
-            // 这条消息只会在 AI 的 System Prompt 之后出现一次，且明确指示 AI 不可模仿
-            {
-                role: "system",
-                content: `以下是对话历史中消息的元数据（ID和时间戳），仅供你引用时查询。严禁将这些信息模仿到你的回复中。\n` +
-                    historySlice.filter(msg => !msg.isHidden).map(msg => `- 消息ID: ${msg.id}, 时间戳: ${msg.timestamp}`).join('\n') +
-                    `\n--- 消息内容开始 ---`
-            },
+            // 【已删除】原有的“元数据图例”系统消息，防止 AI 模仿 ID 数组格式
 
             ...historySlice.map(msg => {
                 if (msg.isHidden) return null;
@@ -3283,11 +3278,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     contentText = '[收到一条未知类型的消息]';
                 }
 
-                // 【【【核心：直接传递纯文本内容，不再拼接 ID/时间戳】】】
-                return { role: msg.role === 'user' ? 'user' : 'assistant', content: contentText };
+                // 【核心修改：将时间戳内嵌到内容中，防止 AI 格式混乱】
+                // 只有当内容是字符串时才添加前缀，避免破坏复杂对象结构
+                const finalContent = `(Timestamp: ${msg.timestamp}) ${contentText}`;
+
+                return { role: msg.role === 'user' ? 'user' : 'assistant', content: finalContent };
             }).filter(Boolean)
         ];
-
         // ===================================================================
         // 【【【核心逻辑新增：处理用户未回复的情况】】】
         // ===================================================================
@@ -7074,9 +7071,36 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 策略5: 最后的防线 - 如果所有解析都失败，将整个原始响应视为单条纯文本消息
-        console.error("[AI Response Parser] Strategy 5: All JSON parsing strategies failed! Treating response as single plain text. Original response:", jsonString);
-        return [{ type: 'text', content: jsonString }];
+        // 【新增 暴力正则提取】
+        // 当普通的 JSON 解析失败时，尝试忽略所有非 JSON 字符，强行提取 {...} 结构
+        const aggressiveMatches = text.match(/{[^{}]*}/g);
+        if (aggressiveMatches) {
+            const aggressiveResults = [];
+            for (const match of aggressiveMatches) {
+                try {
+                    const parsed = JSON.parse(match);
+                    // 只有当它看起来像我们要的消息对象时才采纳
+                    if (parsed && (parsed.type || parsed.content)) {
+                        aggressiveResults.push(parsed);
+                    }
+                } catch (e) { /* 忽略无效片段 */ }
+            }
+            if (aggressiveResults.length > 0) {
+                console.log(`[AI Response Parser] Strategy 4.5: Aggressive regex extracted ${aggressiveResults.length} objects.`);
+                return aggressiveResults;
+            }
+        }
+
+        // 策略5: 最后的防线 (已增强)
+        // 如果上面都失败了，说明 AI 彻底破防发了纯文本，或者格式乱得无法识别。
+        // 我们不直接返回 raw string，而是手动把它包装成一个标准的 text 消息对象。
+        // 这样前端渲染时就不会出错，只会显示一段普通的文本气泡。
+        console.error("[AI Response Parser] Strategy 5: All strategies failed. Wrapping raw text as standard message.");
+
+        // 移除可能存在的 Markdown 代码块标记，让纯文本更干净
+        const cleanText = jsonString.replace(/^```json\s*/, '').replace(/```$/, '').trim();
+
+        return [{ type: 'text', content: cleanText }];
     }
 
 
