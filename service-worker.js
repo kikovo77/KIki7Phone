@@ -1,7 +1,7 @@
 // service-worker.js - 修正并整合后的最终版本
 
 // 【核心修改1】每次更新代码时，请修改这个版本号，强制浏览器更新缓存
-const CACHE_NAME = 'kikiphone-cache-v1.2';
+const CACHE_NAME = 'kikiphone-cache-v1.3';
 // 【核心修改2】列出所有您希望离线可用的静态资源文件
 const urlsToCache = [
     '/', // 确保缓存根路径（通常指向 index.html）
