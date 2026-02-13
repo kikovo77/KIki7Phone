@@ -3042,7 +3042,6 @@ document.addEventListener('DOMContentLoaded', () => {
 - **必须**变换句式，不要使用固定的模板。 对话需要具有多样性，严禁过度依赖单一的回复模板或句式结构。你需要灵活运用词汇和句子结构，保持语言的新鲜感和随机性。且必须保证语句通顺，**绝对禁止**前言不搭后语。
 - **必须**确保正文中不含有任何学术报告、数据汇报、专业名词等完全不会出现在口语中的内容，严格保证对白口语化。
     # 你的“动作”指令库 (你只能从以下列表中选择动作):
-    # 你的“动作”指令库 (你只能从以下列表中选择动作):
 *   **发送文本**: \`{"type": "text", "content": "你想说的文本内容"}\`
 *   **引用回复**: \`{"type": "quote_reply", "target_id": "你想引用的那条消息的ID", "content": "你的回复内容"}\` (注意：你必须从对话历史中找到准确的ID，并且你的回复内容不应再重复引用的内容。)
 *   **发送语音**: \`{"type": "voice", "content": "你想在语音里说的话"}\` 
@@ -3096,7 +3095,17 @@ document.addEventListener('DOMContentLoaded', () => {
     *   **B. 对“语音”本身做反应**: 结合你的人设与当下情景做出反应（比如有可能你们正在吵架，或者聊正事,又或者是其他别的什么特殊话题）你可以在主要观察语音秒数，或语音内容中间二选一，也可以把二者结合。
     *   **C. 延迟反应**: 在AI决定不听语音后，如果用户追问，AI可以根据记忆中的文字内容进行回应，并可以做出相应反应。例如，用户问“你听我语音了吗”，你可以先回复 "啊..我刚刚没听"，然后再根据记忆中的文字内容进行补充回应。
 
+# 【【【引用消息处理规则 (请务必严格遵守)】】】
+   **用户引用理解指南**: 当你看到用户消息以 \`(用户引用了 [被引用人] 的 "[被引用内容]") 然后说: "[用户新说的话]"\` 这种格式出现时，请将这视为用户在对特定消息进行回应或强调。
+    -   你必须优先关注被引用的 \`"[被引用内容]"\`，并理解其语义。
+    -   然后将 \`"[用户新说的话]"\` 与引用的目的结合起来，做出整体判断。
+    -   用户引用可能是为了：直接提问、澄清、强调、反驳、或者仅仅作为话题的衔接。
 
+# 如何【人性化地】处理引用消息处理规则 (请务必严格遵守): 回复时，你应该像真人一样，在以下场景下**优先考虑**使用 \`引用回复\` 指令，以提高对话的精准度和互动感：
+    1.  **直接针对性回应**：当你需要对用户（或你自己）的某句话进行**精确的反问、澄清、解释或评论**时。
+    2.  **强调与扩展**：当你想**强调**用户（或你自己）的某段话，并在此基础上展开新的话题或观点时。
+    3.  **避免场景**：当你的回复是一个**全新的话题**，或与任何特定历史消息关联不强时，则不应使用引用。
+    
 # 如何【人性化地】处理照片消息 (包括伪装和真实的):
 1.  **【【【感知】】**: 当你看到 \`[发送了一张照片，照片描述是：'zzzz']\` 或 \`[发送了一张图片]\`时，你要知道用户给你看了一张照片。描述 \`zzzz\`就是照片的内容。
 2.  **【【【像看照片一样回应】】**: 你的回应要基于你“看到”的内容。
@@ -3180,38 +3189,50 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxMemory = chat.settings.maxMemory || 10;
         const historySlice = chat.history.slice(-maxMemory);
 
+        // 【【【核心修改：移除每条消息的污染式 ID/时间戳前缀，改为结构化传递用户引用】】】
         const messagesForApi = [
-            { role: "system", content: systemPrompt },
+            { role: "system", content: systemPrompt }, // System Prompt 依然是第一条消息
+
+            // 构造一个消息 ID 和时间戳的“图例”，用于 AI 引用时查询
+            // 这条消息只会在 AI 的 System Prompt 之后出现一次，且明确指示 AI 不可模仿
+            {
+                role: "system",
+                content: `以下是对话历史中消息的元数据（ID和时间戳），仅供你引用时查询。严禁将这些信息模仿到你的回复中。\n` +
+                    historySlice.filter(msg => !msg.isHidden).map(msg => `- 消息ID: ${msg.id}, 时间戳: ${msg.timestamp}`).join('\n') +
+                    `\n--- 消息内容开始 ---`
+            },
+
             ...historySlice.map(msg => {
                 if (msg.isHidden) return null;
 
-                const formattedTimestamp = `(ID: ${msg.id}, Timestamp: ${msg.timestamp}): `;
-
-                // --- 【【【全新 V5.7 最终修复版：全面增强消息上下文】】】 ---
                 let contentText = '';
 
-                if (Array.isArray(msg.content) && msg.content[0]?.type === 'image_url') {
-                    // 1. 处理真实图片消息
+                // --- 处理用户发送的带引用消息 ---
+                if (msg.role === 'user' && msg.quote) {
+                    const quoteAuthor = msg.quote.author;
+                    const quoteContent = msg.quote.content;
+                    // 【【【核心：构建结构化的用户引用文本】】】
+                    // 告知 AI 用户引用了谁的哪句话，然后说了什么
+                    contentText = `(用户引用了 ${quoteAuthor} 的 "${quoteContent}") 然后说: "${msg.content}"`;
+                }
+                // --- 现有消息类型处理（基本保持不变，但移除了 formattedTimestamp） ---
+                else if (Array.isArray(msg.content) && msg.content[0]?.type === 'image_url') {
                     const textPart = msg.content.find(item => item.type === 'text');
                     const description = textPart ? textPart.text : '[发送了一张图片]';
                     return {
                         role: msg.role,
                         content: [
-                            { type: 'text', text: formattedTimestamp + description }, // 将时间戳和描述合并
+                            { type: 'text', text: description }, // 移除了 formattedTimestamp
                             ...msg.content.filter(item => item.type === 'image_url')
                         ]
                     };
                 } else if (msg.type === 'sticker') {
-                    // 2. 处理表情包消息
                     contentText = `[发送了一张名为'${msg.meaning}'的表情包]`;
                 } else if (msg.type === 'voice') {
-                    // 3. 处理语音消息
                     contentText = `[发送了一条 ${msg.duration} 秒的语音消息，内容是：'${msg.content}']`;
                 } else if (msg.type === 'photo') {
-                    // 4. 处理“拍摄”的伪装图片消息
                     contentText = `[发送了一张照片，照片描述是：'${msg.content}']`;
                 } else if (msg.type === 'transfer') {
-                    // 5. 处理转账消息 (逻辑不变)
                     if (msg.role === 'user') {
                         if (msg.status === 'pending') {
                             contentText = `[向你发起了一笔转账，金额：¥${msg.amount}，备注：'${msg.remarks || '无'}']`;
@@ -3228,18 +3249,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 } else if (msg.type === 'couple_status') {
-                    // 6. 处理情侣空间消息 (逻辑不变)
                     contentText = `[系统消息：发生了一个关于情侣空间的事件]`;
                 } else if (typeof msg.content === 'string') {
-                    // 7. 处理普通文本消息
                     contentText = msg.content;
                 } else {
-                    // 兜底处理，以防有未知的消息类型
                     contentText = '[收到一条未知类型的消息]';
                 }
 
-                const formattedContent = formattedTimestamp + contentText;
-                return { role: msg.role === 'user' ? 'user' : 'assistant', content: formattedContent };
+                // 【【【核心：直接传递纯文本内容，不再拼接 ID/时间戳】】】
+                return { role: msg.role === 'user' ? 'user' : 'assistant', content: contentText };
             }).filter(Boolean)
         ];
 
@@ -3640,22 +3658,30 @@ document.addEventListener('DOMContentLoaded', () => {
      * 处理编辑 (V2.45 原地编辑优化版)
      */
     function handleEdit() {
-        // 首先，还是找到整个气泡
-        const messageBubble = document.querySelector(`.message-wrapper[data-message-id="${activeContextMenuMsgId}"] .message-bubble`);
-        // 【核心修改】然后，精准地找到气泡内部我们放文字的那个span
-        const textSpan = messageBubble ? messageBubble.querySelector('.message-text-content') : null;
-
-        if (!textSpan || textSpan.isEditing) return;
+        // 首先，找到整个消息气泡的包装器
+        const messageWrapper = document.querySelector(`.message-wrapper[data-message-id="${activeContextMenuMsgId}"]`);
+        if (!messageWrapper) return;
 
         const chat = chats.find(c => c.id === activeChatId);
         const msg = chat.history.find(m => m.id === activeContextMenuMsgId);
 
-        if (!msg || (msg.type && msg.type !== 'text') || msg.quote) {
-            alert('只能编辑不带引用的纯文本消息');
+        // 【【【核心修改1：放宽编辑限制】】】
+        // 允许编辑所有文本类型的消息，包括带有引用的。
+        // 但仍然不允许编辑表情包、图片、语音、转账等非文本类型。
+        if (!msg || (msg.type && msg.type !== 'text')) {
+            alert('只能编辑纯文本消息，不能编辑表情、图片、语音或转账等特殊类型。');
             return;
         }
 
-        // 【核心修改】现在，所有的编辑操作都只针对这个textSpan
+        // 【【【核心修改2：精确找到要编辑的文本元素】】】
+        // 如果消息有引用，则编辑 msg.content 对应的文本span
+        // 如果没有引用，则直接编辑气泡内的主要文本span
+        const textSpan = msg.quote
+            ? messageWrapper.querySelector('.message-bubble .message-text') // 针对默认引用样式的文本
+            : messageWrapper.querySelector('.message-bubble .message-text-content'); // 针对纯文本和pop引用样式的文本
+
+        if (!textSpan || textSpan.isEditing) return; // 确保元素存在且不在编辑中
+
         textSpan.isEditing = true;
         textSpan.setAttribute('contenteditable', 'true');
 
