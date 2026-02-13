@@ -3042,6 +3042,29 @@ document.addEventListener('DOMContentLoaded', () => {
 - **必须**变换句式，不要使用固定的模板。 对话需要具有多样性，严禁过度依赖单一的回复模板或句式结构。你需要灵活运用词汇和句子结构，保持语言的新鲜感和随机性。且必须保证语句通顺，**绝对禁止**前言不搭后语。
 - **必须**确保正文中不含有任何学术报告、数据汇报、专业名词等完全不会出现在口语中的内容，严格保证对白口语化。
     # 你的“动作”指令库 (你只能从以下列表中选择动作):
+    # 【【【AI输出格式范例 (请严格模仿) 】】】
+-   **单条文本消息**:
+    [
+        {"type": "text", "content": "你好呀。"}
+    ]
+-   **多条文本消息**: (注意，这是一个包含多个JSON对象的数组，每个对象代表一条独立的消息)
+    [
+        {"type": "text", "content": "在干嘛。"},
+        {"type": "text", "content": "是在忙吗？"},
+        {"type": "text", "content": "再忙也别忘了吃饭。"}
+    ]
+-   **文本与表情包组合消息**:
+    [
+        {"type": "text", "content": "我有点想养猫了。"},
+        {"type": "sticker", "name": "小猫探头"},
+        {"type": "text", "content": "哇，是小猫。这个表情包好可爱。"}
+    ]
+-   **引用回复**: (请严格按照指令库中的格式填写 'target_id' 和 'content')
+    [
+        {"type": "quote_reply", "target_id": "msg_xxx", "content": "你说得对，我确实做的不太好。"},
+        {"type": "text", "content": "下次我会注意的。"}
+    ]
+
 *   **发送文本**: \`{"type": "text", "content": "你想说的文本内容"}\`
 *   **引用回复**: \`{"type": "quote_reply", "target_id": "你想引用的那条消息的ID", "content": "你的回复内容"}\` (注意：你必须从对话历史中找到准确的ID，并且你的回复内容不应再重复引用的内容。)
 *   **发送语音**: \`{"type": "voice", "content": "你想在语音里说的话"}\` 
@@ -6970,44 +6993,87 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /**
-* 【【【全新安全网】】】一个更强大的、能容错的AI JSON响应解析器
-* @param {string} jsonString - AI返回的、可能不完整的JSON字符串
-* @returns {Array} - 一个标准化的消息对象数组
-*/
+        * 【【【增强型安全网】】】一个更强大的、能容错的AI JSON响应解析器
+        * @param {string} jsonString - AI返回的、可能不完整的或格式不标准的JSON字符串
+        * @returns {Array} - 一个标准化且可用的消息对象数组
+        */
     function parseAiJsonResponse(jsonString) {
         let text = jsonString.trim();
 
-        // 策略1: 优先清理最常见的污染
+        // 策略1: 清理最常见的污染（例如```json代码块标识）
         text = text.replace(/^```json\s*/, '').replace(/```$/, '').trim();
 
-        // 策略2: 尝试直接解析
+        // 策略2: 尝试直接解析为数组或单个对象
         try {
             const parsed = JSON.parse(text);
-            if (Array.isArray(parsed)) return parsed;
+            if (Array.isArray(parsed)) {
+                // 确保数组中的每个元素都是有效的消息对象
+                if (parsed.every(item => typeof item === 'object' && item !== null && 'type' in item && 'content' in item)) {
+                    console.log("[AI Response Parser] Strategy 2: Directly parsed valid JSON array of objects.");
+                    return parsed;
+                }
+            }
+            // 如果AI只返回了一个消息对象（而非数组），我们也把它包装成数组
+            if (typeof parsed === 'object' && parsed !== null && 'type' in parsed && 'content' in parsed) {
+                console.log("[AI Response Parser] Strategy 2: Directly parsed single JSON object, wrapped it in array.");
+                return [parsed];
+            }
         } catch (e) {
-            // 如果直接解析失败，启动救援策略
+            // console.warn("[AI Response Parser] Strategy 2 failed (direct JSON.parse):", e.message);
         }
 
-        // 策略3: 救援 - 提取所有独立的 {} JSON对象
-        // 这个正则表达式可以从混乱的文本中，像钓鱼一样把所有完整的JSON对象钓出来
-        const jsonObjects = text.match(/{[^{}]*:[^}]*}/g);
-        if (jsonObjects) {
-            const results = [];
-            jsonObjects.forEach(objStr => {
+        // 策略3: 尝试解析被额外字符串化（如包裹在引号中）的JSON
+        if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) {
+            try {
+                const innerText = text.slice(1, -1); // 移除外部引号
+                const parsedInner = JSON.parse(innerText);
+                if (Array.isArray(parsedInner)) {
+                    if (parsedInner.every(item => typeof item === 'object' && item !== null && 'type' in item && 'content' in item)) {
+                        console.log("[AI Response Parser] Strategy 3: Parsed stringified JSON array of objects.");
+                        return parsedInner;
+                    }
+                }
+                if (typeof parsedInner === 'object' && parsedInner !== null && 'type' in parsedInner && 'content' in parsedInner) {
+                    console.log("[AI Response Parser] Strategy 3: Parsed stringified single JSON object, wrapped it.");
+                    return [parsedInner];
+                }
+            } catch (e) {
+                // console.warn("[AI Response Parser] Strategy 3 failed (stringified JSON parse):", e.message);
+            }
+        }
+
+        // 策略4: 救援模式 - 从混乱字符串中提取独立的 JSON 结构 (对象或数组)
+        // 这个正则表达式会尝试匹配所有像 {...} 或 [...] 的结构
+        const jsonSegments = text.match(/(\{[\s\S]*?\})|(\[[\s\S]*?\])/g);
+        const results = [];
+        if (jsonSegments) {
+            jsonSegments.forEach(segment => {
                 try {
-                    results.push(JSON.parse(objStr));
+                    const parsedSegment = JSON.parse(segment);
+                    if (typeof parsedSegment === 'object' && parsedSegment !== null) {
+                        // 如果是标准消息对象，直接添加
+                        if ('type' in parsedSegment && 'content' in parsedSegment) {
+                            results.push(parsedSegment);
+                        }
+                        // 【【【核心修复】】】处理像 ["id_xxx", "msg_content"] 这种数组格式
+                        else if (Array.isArray(parsedSegment) && parsedSegment.length >= 2 && typeof parsedSegment === 'string') {
+                            // 假设第二个元素是消息内容，将其包装成标准文本消息对象
+                            results.push({ type: 'text', content: parsedSegment });
+                        }
+                        // 其他可能的对象类型，如果需要可以增加处理逻辑
+                    }
                 } catch (e) {
-                    console.warn('跳过一个无法解析的JSON片段:', objStr);
+                    console.warn("[AI Response Parser] Strategy 4: Failed to parse segment:", segment, e.message);
                 }
             });
             if (results.length > 0) {
-                console.log(`JSON救援成功, 提取到 ${results.length} 个对象。`);
+                console.log(`[AI Response Parser] Strategy 4: JSON rescue successful, extracted ${results.length} message objects.`);
                 return results;
             }
         }
 
-        // 策略4: 最后的防线 - 将整个回复视为单条纯文本消息
-        console.error("所有JSON解析策略均失败！将回复视为纯文本。原始回复:", jsonString);
+        // 策略5: 最后的防线 - 如果所有解析都失败，将整个原始响应视为单条纯文本消息
+        console.error("[AI Response Parser] Strategy 5: All JSON parsing strategies failed! Treating response as single plain text. Original response:", jsonString);
         return [{ type: 'text', content: jsonString }];
     }
 
