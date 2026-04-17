@@ -6241,16 +6241,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') handleCreateNewContact();
     });
 
-    // 【核心修复：将保活触发器绑定到点击事件的“瞬间”】
-    sendBtn.addEventListener('click', () => {
-        if (typeof startAudioKeepAlive === 'function') startAudioKeepAlive();
-        handleSendMessage();
+    sendBtn.addEventListener('click', handleSendMessage);
+    messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
     });
-
-    generateBtn.addEventListener('click', () => {
-        if (typeof startAudioKeepAlive === 'function') startAudioKeepAlive();
-        handleGenerateReply();
-    });
+    generateBtn.addEventListener('click', handleGenerateReply);
 
 
     // ===================================================================
