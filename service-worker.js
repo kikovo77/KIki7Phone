@@ -1,3 +1,4 @@
+// 极简 Service Worker：仅用于接管后台本地弹窗，无任何缓存和服务器干扰
 self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
@@ -8,21 +9,16 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('notificationclick', function (event) {
     event.notification.close();
-
-    // 【核心】明确跳转到根路径，确保不会因为路由错误打开 404
-    const urlToOpen = new URL('/', self.location.origin).href;
-
+    // 点击通知时，尝试拉起或聚焦PWA
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-            // 检查是否已经有一个窗口打开了
+        clients.matchAll({ type: 'window' }).then(windowClients => {
             for (let client of windowClients) {
-                if (client.url.includes(urlToOpen) && 'focus' in client) {
+                if (client.url === '/' && 'focus' in client) {
                     return client.focus();
                 }
             }
-            // 如果没有，则打开新窗口
             if (clients.openWindow) {
-                return clients.openWindow(urlToOpen);
+                return clients.openWindow('/');
             }
         })
     );
