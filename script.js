@@ -2871,6 +2871,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleGenerateReply(regenerationPrompt = '') {
+        // 【核心修复：音频引擎前置】绝不能放在 try 里面，必须在任何 await (如 saveChats) 之前同步执行
+        if (typeof startAudioKeepAlive === 'function') startAudioKeepAlive();
+
         const chat = chats.find(c => c.id === activeChatId);
         if (!chat) return;
 
@@ -7561,6 +7564,9 @@ document.addEventListener('DOMContentLoaded', () => {
      * 处理重新生成请求
      */
     async function handleRegenerate() {
+        // 【核心修复：音频引擎前置】必须在任何 await 之前同步触发，穿透苹果的安全拦截
+        if (typeof startAudioKeepAlive === 'function') startAudioKeepAlive();
+
         const chat = chats.find(c => c.id === activeChatId);
         if (!chat) return;
 
