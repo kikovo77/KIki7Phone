@@ -2,126 +2,41 @@
 // 【【【新增：将 client.js 的内容直接粘贴到这里】】】
 // ===================================================================
 
-// client.js - v2.0 - 持久化开关 & 完整的订阅/取消订阅逻辑
-
-let vapidPublicKey = '';
-let pushSubscription = null;
-
-function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-}
-
-async function getVapidKey() {
-    // 1. 使用你 server.js 文件中定义的、100% 正确的公钥
-    const KNOWN_VAPID_PUBLIC_KEY = "BFVF_o36Q0I0Vj8BvSzOg00WDiqMYs9Jyf9O-gvna592QzwNxs1I5WNWRHg4VjeFr61qOfa-BPATMOxKf4e1H74";
-
-    // 2. 将这个“真理”赋值给全局变量
-    vapidPublicKey = KNOWN_VAPID_PUBLIC_KEY;
-
-    // 3. 同时，为了遵循最佳实践，我们把它存入本地，即使以后代码变了也能用
-    localStorage.setItem('vapidPublicKey', KNOWN_VAPID_PUBLIC_KEY);
-
-    console.log('已从代码内置的VAPID公钥完成初始化。');
-
-    // 4. 直接返回，函数结束。没有任何失败的可能。
-    return;
-}
+// ===================================================================
+// 【纯前端本地通知】权限控制模块
+// ===================================================================
 
 async function handleNotificationToggle(event) {
     const toggle = event.target;
-    // 【核心修改】增加一个加载状态，防止用户连续点击
     toggle.disabled = true;
+
     if (toggle.checked) {
-        await subscribeUser().catch(() => { }); // 捕获错误防止程序中断
-    } else {
-        await unsubscribeUser().catch(() => { });
-    }
-    await updateToggleState(); // 根据最终结果更新状态
-    toggle.disabled = false;
-}
-
-async function subscribeUser() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        alert('您的浏览器不支持推送通知。');
-        throw new Error('Unsupported browser');
-    }
-
-    try {
-        await getVapidKey();
-        const registration = await navigator.serviceWorker.ready;
-        const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
-        const permission = await Notification.requestPermission();
-
-        if (permission !== 'granted') {
-            console.log('用户拒绝了通知权限');
-            alert('您已拒绝通知权限。如需开启，请在浏览器设置中手动操作。');
-            throw new Error('Permission not granted');
-        }
-
-        pushSubscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: applicationServerKey
-        });
-
-        const response = await fetch(`${window.BACKEND_URL}/save-subscription`, {
-            method: 'POST',
-            body: JSON.stringify(pushSubscription),
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (!response.ok) {
-            throw new Error('后端保存订阅信息失败');
-        }
-
-        console.log('用户成功订阅:', JSON.stringify(pushSubscription));
-        localStorage.setItem('notificationsEnabled', 'true');
-        alert('通知已开启！');
-
-    } catch (error) {
-        console.error('订阅推送失败:', error);
-        localStorage.setItem('notificationsEnabled', 'false');
-        // 只有在不是用户主动拒绝的情况下才弹窗
-        if (error.message !== 'Permission not granted') {
-            alert(`开启通知失败: ${error.message}`);
-        }
-        throw error; // 抛出错误让 handleNotificationToggle 知道失败了
-    }
-}
-
-async function unsubscribeUser() {
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        pushSubscription = await registration.pushManager.getSubscription();
-
-        if (pushSubscription) {
-            await fetch(`${window.BACKEND_URL}/remove-subscription`, {
-                method: 'POST',
-                body: JSON.stringify({ endpoint: pushSubscription.endpoint }),
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            const unsubscribed = await pushSubscription.unsubscribe();
-            if (unsubscribed) {
-                console.log('用户成功取消订阅。');
-                pushSubscription = null;
+        if (!("Notification" in window)) {
+            alert("您的浏览器不支持系统通知。");
+            toggle.checked = false;
+        } else if (Notification.permission === "granted") {
+            localStorage.setItem('notificationsEnabled', 'true');
+            alert('本地通知已开启！当应用在后台时，AI回复将弹窗提示。');
+        } else if (Notification.permission !== "denied") {
+            const permission = await Notification.requestPermission();
+            if (permission === "granted") {
+                localStorage.setItem('notificationsEnabled', 'true');
+                alert('本地通知已开启！当应用在后台时，AI回复将弹窗提示。');
+            } else {
+                alert('您拒绝了通知权限。如需开启，请在系统设置中允许。');
+                toggle.checked = false;
+                localStorage.setItem('notificationsEnabled', 'false');
             }
+        } else {
+            alert('通知权限已被永久拒绝，请在系统设置中手动开启。');
+            toggle.checked = false;
+            localStorage.setItem('notificationsEnabled', 'false');
         }
-
+    } else {
         localStorage.setItem('notificationsEnabled', 'false');
-        alert('通知已关闭。');
-
-    } catch (error) {
-        console.error('取消订阅失败:', error);
-        alert('关闭通知失败，请稍后再试。');
-        throw error;
+        alert('本地通知已关闭。');
     }
+    toggle.disabled = false;
 }
 
 async function updateToggleState() {
@@ -129,28 +44,11 @@ async function updateToggleState() {
     if (!enableNotificationsToggle) return;
 
     const userPreference = localStorage.getItem('notificationsEnabled');
-
-    if (userPreference === 'false') {
+    if (userPreference === 'true' && Notification.permission === 'granted') {
+        enableNotificationsToggle.checked = true;
+    } else {
         enableNotificationsToggle.checked = false;
-        return;
-    }
-
-    if ('serviceWorker' in navigator) {
-        try {
-            const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.getSubscription();
-            if (subscription && Notification.permission === 'granted') {
-                enableNotificationsToggle.checked = true;
-                pushSubscription = subscription;
-                localStorage.setItem('notificationsEnabled', 'true');
-            } else {
-                enableNotificationsToggle.checked = false;
-                localStorage.setItem('notificationsEnabled', 'false');
-            }
-        } catch (error) {
-            console.error("检查订阅状态时出错:", error);
-            enableNotificationsToggle.checked = false;
-        }
+        localStorage.setItem('notificationsEnabled', 'false');
     }
 }
 
@@ -159,6 +57,69 @@ async function initPushNotifications() {
     if (enableNotificationsToggle) {
         enableNotificationsToggle.addEventListener('change', handleNotificationToggle);
         await updateToggleState();
+    }
+}
+
+// ===================================================================
+// 【核心黑科技】Web Audio API 静音保活引擎
+// ===================================================================
+let audioKeepAliveCtx = null;
+let audioKeepAliveSource = null;
+
+// 这是一段极小的、完全无声的合规音频二进制数据 (WAV格式，比AAC在前端生成更稳定，OS底层识别效果一致)
+const silentAudioBase64 = "UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+
+function initAudioKeepAlive() {
+    if (!audioKeepAliveCtx) {
+        audioKeepAliveCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+function startAudioKeepAlive() {
+    try {
+        if (!audioKeepAliveCtx) initAudioKeepAlive();
+        if (audioKeepAliveCtx.state === 'suspended') {
+            audioKeepAliveCtx.resume();
+        }
+
+        // 如果已经在播放了，就不重复创建
+        if (audioKeepAliveSource) return;
+
+        const binaryString = window.atob(silentAudioBase64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        audioKeepAliveCtx.decodeAudioData(bytes.buffer, function (buffer) {
+            audioKeepAliveSource = audioKeepAliveCtx.createBufferSource();
+            audioKeepAliveSource.buffer = buffer;
+            audioKeepAliveSource.loop = true; // 开启无限循环
+            audioKeepAliveSource.connect(audioKeepAliveCtx.destination);
+            audioKeepAliveSource.start(0);
+            console.log("音频保活已就绪 (WebAudio Local)");
+        }, function (e) {
+            console.error("音频保活解码失败", e);
+        });
+    } catch (e) {
+        console.error("启动音频保活引擎异常", e);
+    }
+}
+
+function stopAudioKeepAlive() {
+    try {
+        if (audioKeepAliveSource) {
+            audioKeepAliveSource.stop();
+            audioKeepAliveSource.disconnect();
+            audioKeepAliveSource = null;
+            console.log("音频保活已释放，防止手机发热");
+        }
+        if (audioKeepAliveCtx && audioKeepAliveCtx.state === 'running') {
+            audioKeepAliveCtx.suspend();
+        }
+    } catch (e) {
+        console.error("停止音频保活引擎异常", e);
     }
 }
 
@@ -3041,7 +3002,7 @@ document.addEventListener('DOMContentLoaded', () => {
 - **【句式要多样】**: 避免总是使用标点符号，口癖，或是“...xxx...xxx...”这样的模板。尝试使用不同的句式，让内容更自然。
 - **绝对禁止**单一情绪、模板化、回忆，或文艺夸张类句子，如“从第一次见到你...”、“从喜欢上你的第一天起...我就....”。角色的情绪一定是**多变**的，但这不代表角色会喜怒无常，在保证情绪不死板单一的同时，这也是**绝对禁止**的。
 - **绝对禁止**无意义语气词开头，禁止频繁使用"至于"、"但是"等词汇来进行转折，禁止一切生硬语句。
-- **必须**变换句式，不要使用固定的模板。 对话需要具有多样性，严禁过度依赖单一的回复模板或句式结构。你需要灵活运用词汇和句子结构，保持语言的新鲜感和随机性。且必须保证语句通顺，**绝对禁止**前言不搭后语。
+- **必须**变换句式，不要使用固定的模板。   对话需要具有多样性，严禁过度依赖单一的回复模板或句式结构。你需要灵活运用词汇和句子结构，保持语言的新鲜感和随机性。且必须保证语句通顺，**绝对禁止**前言不搭后语。
 - **必须**确保正文中不含有任何学术报告、数据汇报、专业名词等完全不会出现在口语中的内容，严格保证对白口语化。
     # 你的“动作”指令库 (你只能从以下列表中选择动作):
     # 【【【AI输出格式范例 (请严格模仿) 】】】
@@ -3330,6 +3291,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // ===================================================================
 
         try {
+            // 【核心植入】网络请求前，强制启动静音音频保活，欺骗系统挂起机制
+            startAudioKeepAlive();
+
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
@@ -3387,7 +3351,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 let messageToAppend = null;
 
-                // (switch 语句处理各种消息类型的逻辑保持不变, 此处省略以保持简洁...)
+                // 具体的 action.type 匹配逻辑
                 switch (action.type) {
                     case 'quote_reply': {
                         const originalMsg = currentChat.history.find(m => m.id === action.target_id);
@@ -3483,44 +3447,48 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
                 }
 
-                // **核心判断逻辑**
                 if (messageToAppend) {
-                    // 1. 无条件将消息添加到历史记录
                     currentChat.history.push(messageToAppend);
 
-                    // 2. 根据用户是否在看，决定是更新UI还是标记未读
                     if (currentlyVisibleChatId === originalChatId) {
-                        // 用户在看，直接渲染消息
                         appendMessage(messageToAppend, messageContainer, true);
-                        if (isPopTheme) animateStatusText(false); // 渲染后显示“在线”
+                        if (isPopTheme) animateStatusText(false);
                     } else {
-                        // 用户不在，增加未读计数
                         currentChat.unreadCount = (currentChat.unreadCount || 0) + 1;
+                    }
 
-                        // 发送推送通知 (如果需要)
-                        if (pushSubscription) {
-                            let notificationBody = '';
+                    // 【核心植入】本地通知触发逻辑 (仅在用户切出后台，且授权了通知时触发)
+                    if (document.visibilityState === 'hidden' && localStorage.getItem('notificationsEnabled') === 'true') {
+                        if (Notification.permission === "granted") {
+                            let notificationBody = '[收到一条新消息]';
                             if (messageToAppend.type === 'text') notificationBody = messageToAppend.content;
                             else if (messageToAppend.type === 'sticker') notificationBody = `[表情: ${messageToAppend.meaning}]`;
-                            else notificationBody = '[收到一条新消息]';
+                            else if (messageToAppend.type === 'voice') notificationBody = `[语音]`;
 
-                            const payload = {
-                                subscription: pushSubscription,
-                                message: {
-                                    title: currentChat.settings.aiName || currentChat.name,
+                            const aiNameForNotice = currentChat.settings.aiName || currentChat.name;
+                            const aiAvatarForNotice = currentChat.settings.aiAvatar || 'https://tc-new.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250912/I4Xl/1206X1501/IMG_6556.jpeg/webp';
+
+                            // 如果注册了 Service Worker，优先用 SW 弹通知以获得更好系统兼容性；否则用原生 Notification
+                            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                                navigator.serviceWorker.ready.then(function (registration) {
+                                    registration.showNotification(aiNameForNotice, {
+                                        body: notificationBody,
+                                        icon: aiAvatarForNotice,
+                                        badge: aiAvatarForNotice,
+                                        data: { chatId: originalChatId }
+                                    });
+                                });
+                            } else {
+                                new Notification(aiNameForNotice, {
                                     body: notificationBody,
-                                    icon: currentChat.settings.aiAvatar || 'https://tc-new.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250912/I4Xl/1206X1501/IMG_6556.jpeg/webp',
-                                    chatId: originalChatId
-                                }
-                            };
-                            fetch(`${window.BACKEND_URL}/send-notification`, {
-                                method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' }
-                            }).catch(err => console.error('发送推送请求失败:', err));
+                                    icon: aiAvatarForNotice
+                                });
+                            }
                         }
                     }
+
                 }
 
-                // 3. 无论用户在不在看，都立即保存数据并刷新列表
                 await saveChats();
                 renderContactList();
                 updateTotalUnreadBadge();
@@ -3531,7 +3499,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`获取回复失败：${error.message}`);
             const errorMessage = { role: 'assistant', content: `[错误: ${error.message}]`, timestamp: Date.now(), id: 'error_' + Date.now() };
             const chat = chats.find(c => c.id === activeChatId);
-            // 报错时也要恢复名字
             chatContactName.textContent = chat.settings.aiName || chat.name;
             chatContactName.classList.remove('typing-animation');
             if (chat) {
@@ -3539,9 +3506,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 appendMessage(errorMessage);
             }
         } finally {
+            // 【核心植入】请求流程彻底结束（无论成功或失败），必须释放音频保活引擎
+            stopAudioKeepAlive();
+
             generateBtn.disabled = false;
             if (isPopTheme) {
-                animateStatusText(false); // 无论成功失败，最后都变回“在线”
+                animateStatusText(false);
             }
         }
     }
