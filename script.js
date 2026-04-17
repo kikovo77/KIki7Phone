@@ -219,25 +219,23 @@ async function loadAndApplyTheme() {
 }
 document.addEventListener('DOMContentLoaded', () => {
 
-    /**  // ===================================================================
-      // 【【【新增 PWA “后台管家” 注册代码】】】
-      // ===================================================================
-      if ('serviceWorker' in navigator) {
-          window.addEventListener('load', () => {
-              // 【核心修改】使用绝对路径来确保能准确找到文件
-              navigator.serviceWorker.register('/KIki7Phone/service-worker.js')
-                  .then(registration => {
-                      console.log('Service Worker 注册成功，范围是:', registration.scope);
-                      // 注册成功后，我们再次初始化/更新按钮状态，确保一切同步
-                      initPushNotifications();
-                  })
-                  .catch(error => {
-                      console.log('Service Worker 注册失败:', error);
-                      // 可以在这里给用户一个更明确的提示
-                      alert('后台服务模块加载失败，离线通知功能可能无法使用。');
-                  });
-          });
-      } */
+    // ===================================================================
+    // 【解封并修复】PWA “后台管家” (Service Worker) 注册代码
+    // ===================================================================
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            // 【核心修改】使用相对路径 './service-worker.js'，确保不强依赖绝对根目录
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(registration => {
+                    console.log('Service Worker 注册成功，范围是:', registration.scope);
+                    // 确保注册成功后再初始化推送状态
+                    initPushNotifications();
+                })
+                .catch(error => {
+                    console.error('Service Worker 注册失败:', error);
+                });
+        });
+    }
 
     // ===================================================================
     // 【全新 V2.03】全局变量统一定义区
