@@ -8448,8 +8448,8 @@
        border-radius: 22px;
        background-color: rgba(0, 0, 0, 0.189);
        /* 黑色半透明 */
-       backdrop-filter: blur(12px);
-       -webkit-backdrop-filter: blur(12px);
+       backdrop-filter: blur(5px);
+       -webkit-backdrop-filter: blur(5px);
        /* 保留原有阴影适配 */
        box-shadow:
            -0.8px -0.8px 0.5px rgba(245, 245, 245, 0.313) inset,
