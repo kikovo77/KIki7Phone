@@ -325,6 +325,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const userBioText = document.getElementById('user-bio');
     const userLocationText = document.querySelector('#user-location span');
     const capsuleText = document.querySelector('.capsule-widget .capsule-text');
+    // 【新增】伪音乐组件变量
+    const musicCoverArea = document.getElementById('music-cover-area');
+    const musicSongName = document.getElementById('music-song-name');
+    const musicSingerName = document.getElementById('music-singer-name');
+    const musicControlArea = document.getElementById('music-control-area');
+    const musicPlayIconWrap = document.getElementById('music-play-icon-wrap');
+    const musicPauseIconWrap = document.getElementById('music-pause-icon-wrap');
+    const musicNoteIconWrap = document.getElementById('music-note-icon-wrap');
+    const musicWarningIconWrap = document.getElementById('music-warning-icon-wrap');
 
     // --- 情侣空间 ---
     const coupleSpaceScreen = document.getElementById('couple-space-screen');
@@ -6205,6 +6214,12 @@ document.addEventListener('DOMContentLoaded', () => {
         desktopFileInput.click();
     });
 
+    // 【新增】音乐封面双击上传绑定
+    musicCoverArea.addEventListener('dblclick', () => {
+        currentImageUploadTarget = 'musicCover';
+        desktopFileInput.click();
+    });
+
     // -- 文本编辑事件绑定 (已全部更新为新版) --
     userIdText.addEventListener('click', () => {
         editInPlace(userIdText, 'userId', 'Name');
@@ -6258,7 +6273,11 @@ document.addEventListener('DOMContentLoaded', () => {
             userLocation: savedSettings.userLocation || '...',
             capsuleIcon1: savedSettings.capsuleIcon1 || '',
             capsuleText1: savedSettings.capsuleText1 || '',
-            recordInner: savedSettings.recordInner || ''
+            recordInner: savedSettings.recordInner || '',
+            // 【新增】保存音乐组件数据，不偷懒遗漏
+            musicCover: savedSettings.musicCover || '',
+            musicSongName: savedSettings.musicSongName || 'Only One',
+            musicSingerName: savedSettings.musicSingerName || 'NAME'
         };
 
         // 单独加载桌面壁纸
@@ -6322,6 +6341,15 @@ document.addEventListener('DOMContentLoaded', () => {
         userBioText.textContent = desktopSettings.userBio;
         userLocationText.textContent = desktopSettings.userLocation;
         capsuleText.textContent = desktopSettings.capsuleText1;
+
+        // 【新增】应用伪音乐组件数据
+        if (desktopSettings.musicCover) {
+            musicCoverArea.style.backgroundImage = `url(${desktopSettings.musicCover})`;
+        } else {
+            musicCoverArea.style.backgroundImage = 'none';
+        }
+        musicSongName.textContent = desktopSettings.musicSongName;
+        musicSingerName.textContent = desktopSettings.musicSingerName;
 
         // 【核心新增】应用所有图标的自定义样式
         applyDesktopIconSettings();
@@ -6407,6 +6435,115 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // 【新增】带物理字数锁死的音乐专用原地编辑函数
+    function editMusicTextInPlace(element, settingKey, defaultValue, maxLength) {
+        if (element.style.display === 'none') return;
+        const originalValue = desktopSettings[settingKey] || defaultValue;
+        element.style.display = 'none';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = originalValue;
+        input.className = 'temp-edit-input';
+        input.maxLength = maxLength; // 物理底层锁死字符上限
+        input.style.width = '100px'; // 限制输入框宽度防止破坏布局
+        input.style.marginLeft = '15px';
+
+        element.parentNode.insertBefore(input, element.nextSibling);
+        input.focus();
+        input.select();
+
+        const saveAndCleanup = () => {
+            const newValue = input.value.trim();
+            const finalValue = (newValue === '') ? defaultValue : newValue;
+            desktopSettings[settingKey] = finalValue;
+            saveDesktopSettings();
+            element.textContent = finalValue;
+            input.remove();
+            element.style.display = '';
+        };
+
+        input.addEventListener('blur', saveAndCleanup);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') input.blur();
+        });
+    }
+
+    // 为歌名和歌手绑定专用编辑事件 (限制8个字符和6个字符)
+    musicSongName.addEventListener('click', () => {
+        editMusicTextInPlace(musicSongName, 'musicSongName', 'Only One', 8);
+    });
+    musicSingerName.addEventListener('click', () => {
+        editMusicTextInPlace(musicSingerName, 'musicSingerName', 'NAME', 6);
+    });
+
+    // ===================================================================
+    // 【全新】Web Audio API 后台保活核心引擎
+    // ===================================================================
+    let fakeAudioCtx = null;
+    let fakeOscillator = null;
+    let isManualMusicPause = false; // 核心状态锁：区别人为暂停与系统故障
+
+    musicControlArea.addEventListener('click', async () => {
+        // 情况1：当前正在播放中 -> 执行人为暂停
+        if (fakeAudioCtx && fakeAudioCtx.state === 'running') {
+            isManualMusicPause = true; // 上锁，告诉底层“是我自己关的”
+            await fakeAudioCtx.suspend();
+            // UI 切换：显示播放，隐藏暂停。音符/警告图标保持现状（不报错）。
+            musicPlayIconWrap.style.display = 'block';
+            musicPauseIconWrap.style.display = 'none';
+        }
+        // 情况2：当前未播放或被中断 -> 尝试启动/恢复播放
+        else {
+            try {
+                // 如果还没有创建音频上下文，则初始化
+                if (!fakeAudioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    fakeAudioCtx = new AudioContext();
+                    fakeOscillator = fakeAudioCtx.createOscillator();
+                    const gainNode = fakeAudioCtx.createGain();
+
+                    gainNode.gain.value = 0; // 绝对静音输出
+                    fakeOscillator.connect(gainNode);
+                    gainNode.connect(fakeAudioCtx.destination);
+                    fakeOscillator.start();
+
+                    // 【核心监控】死死盯住底层的风吹草动
+                    fakeAudioCtx.onstatechange = () => {
+                        // 如果状态变为挂起或被系统强行中断
+                        if (fakeAudioCtx.state === 'interrupted' || fakeAudioCtx.state === 'suspended') {
+                            if (isManualMusicPause) {
+                                // 鉴定为人为暂停，重置锁，不报异常
+                                isManualMusicPause = false;
+                            } else {
+                                // 鉴定为系统故障！(被杀、来电话、焦点被抢)
+                                musicNoteIconWrap.style.display = 'none';
+                                musicWarningIconWrap.style.display = 'block'; // 弹出警告
+                                musicPlayIconWrap.style.display = 'block'; // 按钮弹回播放状
+                                musicPauseIconWrap.style.display = 'none';
+                            }
+                        }
+                        // 如果状态变为运行中 (启动成功或恢复成功)
+                        else if (fakeAudioCtx.state === 'running') {
+                            isManualMusicPause = false; // 重置锁
+                            musicNoteIconWrap.style.display = 'block'; // 恢复正常音符
+                            musicWarningIconWrap.style.display = 'none'; // 消除警告
+                            musicPlayIconWrap.style.display = 'none';
+                            musicPauseIconWrap.style.display = 'block'; // 变成暂停状
+                        }
+                    };
+                }
+                // 唤醒引擎
+                await fakeAudioCtx.resume();
+            } catch (e) {
+                console.error("伪音乐保活引擎启动失败", e);
+                // 启动发生异常，强行亮起警告图标
+                musicNoteIconWrap.style.display = 'none';
+                musicWarningIconWrap.style.display = 'block';
+            }
+        }
+    });
 
     // ===================================================================
     // 【全新 V1.81 修复方案】表情系统独立“遥控器” (方案一) - 最终完整修复版
