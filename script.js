@@ -16,12 +16,12 @@ async function handleNotificationToggle(event) {
             toggle.checked = false;
         } else if (Notification.permission === "granted") {
             localStorage.setItem('notificationsEnabled', 'true');
-            alert('本地通知已开启！当应用在后台时，AI回复将弹窗提示。');
+            alert('本地通知已开启！');
         } else if (Notification.permission !== "denied") {
             const permission = await Notification.requestPermission();
             if (permission === "granted") {
                 localStorage.setItem('notificationsEnabled', 'true');
-                alert('本地通知已开启！当应用在后台时，AI回复将弹窗提示。');
+                alert('本地通知已开启！');
             } else {
                 alert('您拒绝了通知权限。如需开启，请在系统设置中允许。');
                 toggle.checked = false;
