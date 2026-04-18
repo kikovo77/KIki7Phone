@@ -8436,121 +8436,91 @@
         ===================================================================
         */
 
-   /* --- 伪音乐后台保活组件 --- */
-   #fake-music-widget {
+   /* --- 纪念日组件 --- */
+   #days-matter-widget {
        position: absolute;
        top: 410px;
-       /* 继承原坐标 */
+       /* 【位置微调】与右侧图标顶部对齐 */
        left: 25px;
-       /* 继承原坐标 */
        width: 158px;
        height: 158px;
+       /* --- 【核心修复】多层次样式叠加 --- */
+       /* 1. 通透层(光泽) + 底层(基色) */
+
+
        border-radius: 22px;
-       background-color: rgba(0, 0, 0, 0.189);
-       /* 黑色半透明 */
-       backdrop-filter: blur(5px);
-       -webkit-backdrop-filter: blur(5px);
-       /* 保留原有阴影适配 */
+       /* 【核心】使用box-shadow模拟不规则描边 */
        box-shadow:
            -0.8px -0.8px 0.5px rgba(245, 245, 245, 0.313) inset,
+           /* 左上角亮的内阴影 (模拟粗边) */
            0.8px 0.8px 1px rgba(255, 255, 255, 0.557) inset;
-       overflow: hidden;
-   }
-
-   /* 1. 独立图片区域 */
-   #music-cover-area {
-       position: absolute;
-       /* --- 在这里调节图片的位置与大小 --- */
-       top: 15px;
-       left: 15px;
-       width: 55px;
-       height: 55px;
-       border-radius: 8px;
-       background-color: #ffffff;
-       /* 默认白色底 */
-       background-size: cover;
-       background-position: center;
-       cursor: pointer;
-   }
-
-   /* 2. 独立音符图标微调区 */
-   #music-note-icon-wrap {
-       position: absolute;
-       /* --- 在这里独立移动音符图标 --- */
-       top: 20px;
-       right: 20px;
-   }
-
-   /* 3. 独立警告图标微调区 */
-   #music-warning-icon-wrap {
-       position: absolute;
-       /* --- 在这里独立移动警告图标 --- */
-       top: 20px;
-       right: 20px;
-   }
-
-   /* 4. 歌曲名样式 */
-   #music-song-name {
-       position: absolute;
-       /* --- 在这里调节歌名的位置 --- */
-       top: 80px;
-       left: 15px;
-       margin: 0;
-       color: #ffffff;
-       font-size: 15px;
-       font-weight: 600;
-       /* 白色粗体 */
-       white-space: nowrap;
-       overflow: hidden;
-       cursor: pointer;
-   }
-
-   /* 5. 歌手名样式 */
-   #music-singer-name {
-       position: absolute;
-       /* --- 在这里调节歌手名的位置 --- */
-       top: 102px;
-       left: 15px;
-       margin: 0;
-       color: rgba(255, 255, 255, 0.7);
-       /* 稍淡白色 */
-       font-size: 12px;
-       font-weight: normal;
-       /* 正常体 */
-       white-space: nowrap;
-       overflow: hidden;
-       cursor: pointer;
-   }
-
-   /* 6. 播放/暂停控制区与图标微调区 */
-   #music-control-area {
-       position: absolute;
-       /* 设定一个交互点击范围 */
-       width: 30px;
-       height: 30px;
-       /* --- 在这里调节整个点击区域的位置 --- */
-       bottom: 12px;
-       left: 15px;
-       cursor: pointer;
+       /* 右下角暗的内阴影 (模拟细边) */
        display: flex;
-       justify-content: center;
+       flex-direction: column;
+       overflow: hidden;
+       /* 必须保留，用于裁剪圆角 */
+   }
+
+   /* 【全新】上半部分样式 */
+   .widget-top-pane {
+       height: 39px;
+       /* 顶部区域高度 */
+       flex-shrink: 0;
+       /* 【核心】设置一个更深、更不透明的背景 */
+       background-color: rgba(206, 206, 206, 0.105);
+       display: flex;
        align-items: center;
+       justify-content: center;
+       padding: 0 10px;
+       box-sizing: border-box;
    }
 
-   /* 播放图标独立定位 */
-   #music-play-icon-wrap {
-       position: absolute;
-       /* --- 如果需要，在此独立移动播放图标 --- */
-       top: 9px;
-       left: -1px;
+   .days-matter-title {
+       font-size: 14px;
+       font-weight: 500;
+       color: rgba(255, 255, 255, 0.9);
+       /* 文字改为白色以适应深色背景 */
+       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
    }
 
-   /* 暂停图标独立定位 */
-   #music-pause-icon-wrap {
-       position: absolute;
-       /* --- 如果需要，在此独立移动暂停图标 --- */
-       top: 9px;
-       left: -1px;
+   /* 【全新】下半部分样式 */
+   .widget-bottom-pane {
+       flex-grow: 1;
+       /* 【核心】设置一个更浅、更透明的背景 */
+       background-color: rgba(255, 255, 255, 0.1);
+       display: flex;
+       flex-direction: column;
+       align-items: center;
+       justify-content: center;
+       padding-bottom: 5px;
+   }
+
+   .days-matter-content {
+       font-size: 48px;
+       font-weight: 500;
+       line-height: 1.1;
+   }
+
+   /* 当有数字时，文字为白色 */
+   .days-matter-content:not(:empty) {
+       color: white;
+       font-weight: 600;
+       text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+   }
+
+   /* “暂无纪念日”的特殊样式 */
+   span.days-matter-content {
+       font-size: 14px;
+       font-weight: 400;
+       color: rgba(255, 255, 255, 0.7);
+       /* 改为白色系 */
+   }
+
+   .days-matter-date {
+       font-size: 12px;
+       color: rgba(255, 255, 255, 0.9);
+       margin-top: 8px;
+       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
    }
 
    /* --- 自定义矩形条容器 --- */
