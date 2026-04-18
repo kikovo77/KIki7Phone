@@ -1,3 +1,4 @@
+// 核心后台管家 Service Worker：用于接管后台本地弹窗与拉起应用
 self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
@@ -9,20 +10,23 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('notificationclick', function (event) {
     event.notification.close();
 
-    // 【核心】明确跳转到根路径，确保不会因为路由错误打开 404
-    const urlToOpen = new URL('/', self.location.origin).href;
+    // 提取保存在通知里的聊天ID数据
+    const chatIdToOpen = event.notification.data ? event.notification.data.chatId : null;
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-            // 检查是否已经有一个窗口打开了
-            for (let client of windowClients) {
-                if (client.url.includes(urlToOpen) && 'focus' in client) {
-                    return client.focus();
+            // 如果已经有页面实例存在，不论前台后台
+            if (windowClients.length > 0) {
+                let client = windowClients[0];
+                // 发送精准路由指令给前端 JS
+                if (chatIdToOpen) {
+                    client.postMessage({ type: 'OPEN_CHAT', chatId: chatIdToOpen });
                 }
+                return client.focus();
             }
-            // 如果没有，则打开新窗口
+            // 如果PWA彻底死掉了（连后台进程都没了），退火重开根目录
             if (clients.openWindow) {
-                return clients.openWindow(urlToOpen);
+                return clients.openWindow('/');
             }
         })
     );

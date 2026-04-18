@@ -61,67 +61,35 @@ async function initPushNotifications() {
 }
 
 // ===================================================================
-// 【核心黑科技】Web Audio API 静音保活引擎
+// 【核心黑科技】原生 HTML5 AAC 静音保活引擎
 // ===================================================================
-let audioKeepAliveCtx = null;
-let audioKeepAliveSource = null;
+let keepAliveAudio = null;
 
-// 这是一段极小的、完全无声的合规音频二进制数据 (WAV格式，比AAC在前端生成更稳定，OS底层识别效果一致)
-const silentAudioBase64 = "UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+// 极小体积的无声 AAC Base64 数据，触发系统底层媒体会话的利器
+const silentAacBase64 = "data:audio/aac;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//MQAAAAAAAAAAAAAAAAAAAAAAASWQAAMgAAAAEAIBP/8zEAAAAAABJZAQDIgQAAAgEgE//zMwAAAAAAElkCAAEQAAACASAT//MzAAAAAAASWQMAAhAAAAIBIBP/8zMAAAAAABJZBAABEEAAAgEgE//zMwAAAAAAElkFAAEQQAAACASAT//MzAAAAAAASWQYAARBAAAIBIBP/8zMAAAAAABJZBwABEEAAAgEgE//zMwAAAAAAElkIAAEQQAAACASAT//MzMAAAAAABJZCQABEEAAAgEgE//zMwAAAAAAElkKAABEEAAAgEgE//zMwAAAAAAElkLAAEQQAAACASAT//MzAAAAAAASWQ0AARBAAAIBIBP/8zMAAAAAABJZEAABEEAAAgEgE//zMwAAAAAAElkSAAEQQAAACASAT//MzAAAAAAASWRAAARBAAAIBIBP/8zMAAAAAABJZFAABEEAAAgEgE//zMwAAAAAAElkXAAEQQAAACASAT//MzAAAAAAASWRgAARBAAAIBIBP/8zMAAAAAABJZGQABEEAAAgEgE//zMwAAAAAAElkaAAEQQAAACASAT//MzAAAAAAASWRsAARBAAAIBIBP/8zMAAAAAABJZHwABEEAAAgEgE//zMwAAAAAAElkfAAEQQAAACASAT//MzAAAAAAASWSAgAARBAAAIBIBP/8zMAAAAAABJZJQABEEAAAgEgE//zMwAAAAAAElkmAAEQQAAACASAT//MzAAAAAAASWScAARBAAAIBIBP/8zMAAAAAABJZKAABEEAAAgEgE//zMwAAAAAAElkqAAEQQAAACASAT//MzAAAAAAASWSsAARBAAAIBIBP/8zMAAAAAABJZLgABEEAAAgEgE//zMwAAAAAAElkwAAEQQAAACASAT//MzAAAAAAASWTEgAARBAAAIBIBP/8zMAAAAAABJZMyAARBAAAIBIBP/8zMAAAAAABJZM0AARBAAAIBIBP/8zMAAAAAABJZM4AARBAAAIBIBP/8zMAAAAAABJZM8AARBAAAIBIBP/8zMAAAAAABJZNAAARBAAAIBIBP/8zMAAAAAABJZNEgAARBAAAIBIBP/8zMAAAAAABJZNyAARBAAAIBIBP/8zMAAAAAABJZN0AARBAAAIBIBP/8zMAAAAAABJZN4AARBAAAIBIBP/8zMAAAAAABJZN8AARBAAAIBIBP/8zMAAAAAABJZOAAARBAAAIBIBP/8zMAAAAAABJZOEgAARBAAAIBIBP/8zMAAAAAABJZOyAARBAAAIBIBP/8zMAAAAAABJZO0AARBAAAIBIBP/8zMAAAAAABJZO4AARBAAAIBIBP/8zMAAAAAABJZO8AARBAAAIBIBP/8zMAAAAAABJZPAAARBAAAIBIBP/8zMAAAAAABJZPEgAARBAAAIBIBP/8zMAAAAAABJZPyAARBAAAIBIBP/8zMAAAAAABJZP0AARBAAAIBIBP/8zMAAAAAABJZP4AARBAAAIBIBP/8zMAAAAAABJZP8AARBAAAIBIBP/8zMAAAAAABJZQAAARBAAAIBIBP/8zMAAAAAABJZQEgAARBAAAIBIBP/8zMAAAAAABJZQyAARBAAAIBIBP/8zMAAAAAABJZQ0AARBAAAIBIBP/8zMAAAAAABJZQ4AARBAAAIBIBP/8zMAAAAAABJZQ8AARBAAAIBIBP/8zMAAAAAABJZRQAARBAAAIBIBP/8zMAAAAAABJZRUAARBAAAIBIBP/8zMAAAAAABJZRYAARBAAAIBIBP/8zMAAAAAABJZRcAARBAAAIBIBP/8zMAAAAAABJZRwAARBAAAIBIBP/8zMAAAAAABJZR8AARBAAAIBIBP/8zMAAAAAABJZTgAARBAAAIBIBP/8zMAAAAAABJZToAARBAAAIBIBP/8zMAAAAAABJZTwAARBAAAIBIBP/8zMAAAAAABJZT0AARBAAAIBIBP/8zMAAAAAABJZUQAARBAAAIBIBP/8zMAAAAAABJZUYAARBAAAIBIBP/8zMAAAAAABJZUcAARBAAAIBIBP/8zMAAAAAABJZUgAARBAAAIBIB";
 
-function initAudioKeepAlive() {
-    if (!audioKeepAliveCtx) {
-        audioKeepAliveCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-}
-
-function startAudioKeepAlive() {
+function initAndStartAudioKeepAlive() {
+    if (keepAliveAudio) return; // 避免重复创建
     try {
-        if (!audioKeepAliveCtx) initAudioKeepAlive();
-        if (audioKeepAliveCtx.state === 'suspended') {
-            audioKeepAliveCtx.resume();
-        }
-
-        // 如果已经在播放了，就不重复创建
-        if (audioKeepAliveSource) return;
-
-        const binaryString = window.atob(silentAudioBase64);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        audioKeepAliveCtx.decodeAudioData(bytes.buffer, function (buffer) {
-            audioKeepAliveSource = audioKeepAliveCtx.createBufferSource();
-            audioKeepAliveSource.buffer = buffer;
-            audioKeepAliveSource.loop = true; // 开启无限循环
-            audioKeepAliveSource.connect(audioKeepAliveCtx.destination);
-            audioKeepAliveSource.start(0);
-            console.log("音频保活已就绪 (WebAudio Local)");
-        }, function (e) {
-            console.error("音频保活解码失败", e);
+        keepAliveAudio = new Audio();
+        keepAliveAudio.src = silentAacBase64;
+        keepAliveAudio.loop = true;
+        keepAliveAudio.crossOrigin = "anonymous";
+        keepAliveAudio.playsInline = true; // 突破iOS限制的核心属性
+        keepAliveAudio.play().then(() => {
+            console.log("HTML5 AAC 音频后台保活引擎已永久就绪");
+        }).catch(e => {
+            console.warn("音频保活需用户交互才能启动，等待下次交互:", e);
+            keepAliveAudio = null;
         });
     } catch (e) {
-        console.error("启动音频保活引擎异常", e);
+        console.error("音频保活引擎初始化失败:", e);
     }
 }
 
-function stopAudioKeepAlive() {
-    try {
-        if (audioKeepAliveSource) {
-            audioKeepAliveSource.stop();
-            audioKeepAliveSource.disconnect();
-            audioKeepAliveSource = null;
-            console.log("音频保活已释放，防止手机发热");
-        }
-        if (audioKeepAliveCtx && audioKeepAliveCtx.state === 'running') {
-            audioKeepAliveCtx.suspend();
-        }
-    } catch (e) {
-        console.error("停止音频保活引擎异常", e);
-    }
-}
+// 将保活引擎的启动绑定到全局首次交互上，确保存活率达到最高
+document.addEventListener('touchstart', initAndStartAudioKeepAlive, { once: true, passive: true });
+document.addEventListener('click', initAndStartAudioKeepAlive, { once: true, passive: true });
 
 // ===================================================================
 // 【全新 V1.81 修复方案】IndexedDB 数据库帮助函数
@@ -2871,8 +2839,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleGenerateReply(regenerationPrompt = '') {
-        // 【核心修复：音频引擎前置】绝不能放在 try 里面，必须在任何 await (如 saveChats) 之前同步执行
-        if (typeof startAudioKeepAlive === 'function') startAudioKeepAlive();
+        // 【核心前置】确保在任何异步操作发生前，激活 HTML5 媒体会话
+        if (typeof initAndStartAudioKeepAlive === 'function') initAndStartAudioKeepAlive();
 
         const chat = chats.find(c => c.id === activeChatId);
         if (!chat) return;
@@ -3507,9 +3475,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 appendMessage(errorMessage);
             }
         } finally {
-            // 【核心植入】请求流程彻底结束（无论成功或失败），必须释放音频保活引擎
-            stopAudioKeepAlive();
-
             generateBtn.disabled = false;
             if (isPopTheme) {
                 animateStatusText(false);
