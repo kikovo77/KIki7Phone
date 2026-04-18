@@ -16,12 +16,12 @@ async function handleNotificationToggle(event) {
             toggle.checked = false;
         } else if (Notification.permission === "granted") {
             localStorage.setItem('notificationsEnabled', 'true');
-            alert('本地通知已开启！');
+            alert('本地通知已开启');
         } else if (Notification.permission !== "denied") {
             const permission = await Notification.requestPermission();
             if (permission === "granted") {
                 localStorage.setItem('notificationsEnabled', 'true');
-                alert('本地通知已开启！');
+                alert('本地通知已开启');
             } else {
                 alert('您拒绝了通知权限。如需开启，请在系统设置中允许。');
                 toggle.checked = false;
@@ -60,36 +60,6 @@ async function initPushNotifications() {
     }
 }
 
-// ===================================================================
-// 【核心黑科技】原生 HTML5 AAC (MP4封装) 静音保活引擎
-// ===================================================================
-let keepAliveAudio = null;
-
-// 极小体积的无声 AAC (MP4封装) Base64 数据，100%跨平台兼容，触发系统底层媒体会话的利器
-const silentAacBase64 = "data:audio/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAW1wNDJpc29tAAAAHndpZGUAAABtZGF0AAAAAAAAAAQAAABWbXBneQAAAABhAAAAbW9vdgAAAGxtdmhkAAAAAM9h0p7PYdKeAAACWwAAAPwAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAACp0cmFrAAAAXHRraGQAAAADz2HSns9h0p4AAAABAAAAAAABAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAD8AAAAAAABAAAAAABsbWRpYQAAACBtZGhkAAAAAM9h0p7PYdKeAAACWwAAAPwVQAAAAAAALWhkbHIAAAAAAAAAAHNvdW4AAAAAAAAAAAAAAABTb3VuZEhhbmRsZXIAAAAAX21pbmYAAAAUaGRscgAAAAAAAAAyc291bgAAAAAAAAAAAAAAAFNvdW5kSGFuZGxlcgAAAAA8c3RibAAAADhzdHNkAAAAAAAAAAEAAAAobXA0YQAAAAAAAAABAAAAAQAAACACWwAAAAAAABBlc2RzAAAAAAOAgIAiAAAABICAgBMAXwEAAAMgAAAAAAABgICAAxIQgAAAAABoc3R0cwAAAAAAAAABAAAAHHN0c3oAAAAAAAAAAAAAAAIAAAAEAAAAOAAAAChzdHNjAAAAAAAAAAEAAAABAAAAAgAAAAEAAAABAAAAAQAAAAIAAAABAAAAHHN0Y28AAAAAAAAAAQAAAAEAAAABAAAAAgAAABxzdHNvAAAAAAAAAAEAAAABAAAAAgAAABQAAABkc3RzegAAAAAAAAABAAAAJg==";
-
-function initAndStartAudioKeepAlive() {
-    if (keepAliveAudio) return; // 避免重复创建
-    try {
-        keepAliveAudio = new Audio();
-        keepAliveAudio.src = silentAacBase64;
-        keepAliveAudio.loop = true;
-        keepAliveAudio.crossOrigin = "anonymous";
-        keepAliveAudio.playsInline = true; // 突破iOS限制的核心属性
-        keepAliveAudio.play().then(() => {
-            console.log("HTML5 AAC(MP4) 音频后台保活引擎已永久就绪");
-        }).catch(e => {
-            console.warn("音频保活需用户交互才能启动，等待下次交互:", e);
-            keepAliveAudio = null;
-        });
-    } catch (e) {
-        console.error("音频保活引擎初始化失败:", e);
-    }
-}
-
-// 将保活引擎的启动绑定到全局首次交互上，确保存活率达到最高
-document.addEventListener('touchstart', initAndStartAudioKeepAlive, { once: true, passive: true });
-document.addEventListener('click', initAndStartAudioKeepAlive, { once: true, passive: true });
 
 // ===================================================================
 // 【全新 V1.81 修复方案】IndexedDB 数据库帮助函数
@@ -2839,9 +2809,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleGenerateReply(regenerationPrompt = '') {
-        // 【核心前置】确保在任何异步操作发生前，激活 HTML5 媒体会话
-        if (typeof initAndStartAudioKeepAlive === 'function') initAndStartAudioKeepAlive();
-
         const chat = chats.find(c => c.id === activeChatId);
         if (!chat) return;
 
@@ -3260,9 +3227,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // ===================================================================
 
         try {
-            // 【核心植入】网络请求前，确保 HTML5 AAC 媒体会话处于激活状态
-            if (typeof initAndStartAudioKeepAlive === 'function') initAndStartAudioKeepAlive();
-
             const response = await fetch(`${baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
@@ -7529,9 +7493,6 @@ document.addEventListener('DOMContentLoaded', () => {
          * 处理重新生成请求
          */
     async function handleRegenerate() {
-        // 【核心修复：音频引擎前置】必须在任何 await 之前同步触发，激活 HTML5 媒体会话
-        if (typeof initAndStartAudioKeepAlive === 'function') initAndStartAudioKeepAlive();
-
         const chat = chats.find(c => c.id === activeChatId);
         if (!chat) return;
 
