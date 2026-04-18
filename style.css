@@ -8452,8 +8452,8 @@
        -webkit-backdrop-filter: blur(12px);
        /* 保留原有阴影适配 */
        box-shadow:
-           -0.8px -0.8px 0.8px rgba(245, 245, 245, 0.313) inset,
-           0.8px 0.8px 1.56px rgba(255, 255, 255, 0.557) inset;
+           -0.8px -0.8px 0.5px rgba(245, 245, 245, 0.313) inset,
+           0.8px 0.8px 1.6px rgba(255, 255, 255, 0.557) inset;
        overflow: hidden;
    }
 
