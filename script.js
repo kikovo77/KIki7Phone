@@ -5311,7 +5311,7 @@ document.addEventListener('DOMContentLoaded', () => {
             item.className = 'preset-list-item';
             item.dataset.id = preset.id;
             item.innerHTML = `
-                        < img src="${preset.avatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg'}" class="preset-list-avatar" data-type="role" data-id="${preset.id}">
+                        <img src="${preset.avatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg'}" class="preset-list-avatar" data-type="role" data-id="${preset.id}">
                         <span class="preset-list-name">${preset.name}</span>
                         <div class="preset-list-actions">
                             <button data-action="delete-role" data-id="${preset.id}">
