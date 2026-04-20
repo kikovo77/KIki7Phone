@@ -234,6 +234,14 @@ function initKeepAliveEngine() {
         if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
             try {
                 await audioCtx.resume();
+                // 【Safari 兜底】resume() resolve 之后直接检查 state，
+                // 不依赖 onstatechange（Safari 旧版该回调不可靠）
+                if (audioCtx.state !== 'running') {
+                    console.error('[保活引擎] resume 后状态不是 running，Safari 可能拒绝了授权。', audioCtx.state);
+                    toggle.checked = false;
+                    setStatus('ERROR');
+                    return;
+                }
             } catch (e) {
                 console.error('[保活引擎] resume 失败，引擎无法启动。', e);
                 toggle.checked = false;
@@ -242,8 +250,29 @@ function initKeepAliveEngine() {
             }
         }
 
+        // -- 11.2.5 首次创建后的 Safari 兜底检查 --
+        // new AudioContext() 在 Safari 里有时创建出来就是 suspended 状态，
+        // 需要在这里再确认一次并尝试 resume
+        if (audioCtx.state === 'suspended') {
+            try {
+                await audioCtx.resume();
+                if (audioCtx.state !== 'running') {
+                    console.error('[保活引擎] 首次 resume 失败，Safari 不认可当前手势为合法授权。');
+                    toggle.checked = false;
+                    setStatus('ERROR');
+                    return;
+                }
+            } catch (e) {
+                console.error('[保活引擎] 首次 resume 异常:', e);
+                toggle.checked = false;
+                setStatus('ERROR');
+                return;
+            }
+        }
+
         // -- 11.3 申请 Web Lock --
         acquireWebLock();
+
 
         // -- 11.4 启动 Worker 心跳 --
         startWorker();
@@ -288,35 +317,54 @@ function initKeepAliveEngine() {
     //       原因：iOS 的音频授权检查的是"真实用户手势事件"，
     //       click 事件在 iOS 上更可靠地被识别为合法的用户触摸行为。
     // ------------------------------------------------------------------
+    // 【跨浏览器兼容的开关触发方案】
+    // 问题背景：
+    // - 桌面端：直接监听 click 会因为 label+input 双重触发导致逻辑执行两次。
+    // - iOS Safari：change 事件不被 Safari 识别为"合法用户原始手势"，
+    //   导致在 change 回调里调用 new AudioContext() 或 resume() 时被拒绝授权。
+    // - iOS Edge / 其他浏览器：touchend 或 click 均可正常授权。
+    //
+    // 解决方案：
+    // 统一监听 toggle（input 元素本身）的 click 事件（不是 label 的 click），
+    // input 元素自身的 click 不会被 label 双重触发，且在 iOS Safari 上被认可为原始手势。
+    // 用一个防抖变量确保极端情况下也只执行一次。
+
+    let isProcessing = false; // 防止异步操作期间重复触发
+
     toggle.addEventListener('click', async (event) => {
-        // 阻止 checkbox 的默认行为，由我们的代码手动控制 checked 状态
-        // 这样可以防止"异常暂停状态下点击后开关错误地变成开启"
+        // 阻止 checkbox 的默认翻转，我们手动控制
         event.preventDefault();
+
+        // 如果上一次操作还没结束（startEngine/stopEngine 是异步的），直接忽略本次点击
+        if (isProcessing) return;
+        isProcessing = true;
 
         const currentStatus = statusText.textContent;
 
-        if (currentStatus === STATUS.ACTIVE) {
-            // 当前已激活 → 执行手动暂停
-            await stopEngine();
+        try {
+            if (currentStatus === STATUS.ACTIVE) {
+                // 当前已激活 → 手动暂停
+                await stopEngine();
 
-        } else if (
-            currentStatus === STATUS.PENDING ||
-            currentStatus === STATUS.MANUAL ||
-            currentStatus === '' // 初始化时 statusText 为空，等同于 PENDING
-        ) {
-            // 当前待激活或已手动暂停 → 执行启动
-            // 【重要】startEngine 必须在这里同步调用（不能包在 setTimeout 里），
-            // 因为 click 事件的用户授权只在这个同步调用栈里有效。
-            await startEngine();
+            } else if (
+                currentStatus === STATUS.PENDING ||
+                currentStatus === STATUS.MANUAL ||
+                currentStatus === ''
+            ) {
+                // 当前待激活或已手动暂停 → 启动
+                await startEngine();
 
-        } else if (currentStatus === STATUS.ERROR) {
-            // 当前异常暂停 → 尝试重试恢复
-            // 重试走完整的 startEngine 流程
-            await startEngine();
-            // 如果 startEngine 执行后状态仍然是 ERROR（说明恢复失败），
-            // 则保持开关在关闭状态，不做任何改变（已在 startEngine 内部处理）
+            } else if (currentStatus === STATUS.ERROR) {
+                // 当前异常暂停 → 重试
+                await startEngine();
+            }
+        } finally {
+            // 无论成功还是失败，都解除处理锁，允许下次点击
+            isProcessing = false;
         }
     });
+
+
 
     // ------------------------------------------------------------------
     // 【14】初始状态：页面加载时设置为"待激活"
