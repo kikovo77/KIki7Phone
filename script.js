@@ -1,4 +1,336 @@
 // ===================================================================
+// 【后台保活引擎】Web Audio API + Web Lock + Web Worker 三层保活系统
+// 作者备注：此模块完全独立，所有变量封闭在函数作用域内，不污染全局。
+// ===================================================================
+
+function initKeepAliveEngine() {
+
+    // ------------------------------------------------------------------
+    // 【1】获取 DOM 元素
+    // ------------------------------------------------------------------
+    const toggle = document.getElementById('keepalive-toggle');
+    const statusText = document.getElementById('keepalive-status-text');
+
+    if (!toggle || !statusText) {
+        console.error('[保活引擎] 找不到开关或状态文字元素，引擎初始化中止。');
+        return;
+    }
+
+    // ------------------------------------------------------------------
+    // 【2】引擎状态变量（全部封闭在此函数内）
+    // ------------------------------------------------------------------
+    let audioCtx = null;           // AudioContext 实例
+    let oscillator = null;         // 振荡器节点
+    let gainNode = null;           // 增益节点
+    let keepAliveWorker = null;    // Web Worker 实例
+    let lockReleaser = null;       // Web Lock 释放函数
+    let isManualPause = false;     // 手动暂停标志位：true=用户主动暂停，false=系统/异常原因
+    let resumeFailCount = 0;       // 连续 resume 失败计数器（超过3次认定为不可自动恢复）
+    const MAX_RESUME_FAIL = 3;     // 最大允许自动 resume 失败次数
+
+    // ------------------------------------------------------------------
+    // 【3】状态枚举（四种状态的文字，集中管理方便修改）
+    // ------------------------------------------------------------------
+    const STATUS = {
+        PENDING: '待激活',
+        ACTIVE: '已激活',
+        MANUAL: '已手动暂停',
+        ERROR: '异常暂停'
+    };
+
+    // ------------------------------------------------------------------
+    // 【4】UI 更新函数（更新状态文字和开关显示状态）
+    // ------------------------------------------------------------------
+    function setStatus(statusKey) {
+        statusText.textContent = STATUS[statusKey];
+    }
+
+    // ------------------------------------------------------------------
+    // 【5】申请 Web Lock（宣告浏览器此页面有未完成的关键任务）
+    // ------------------------------------------------------------------
+    function acquireWebLock() {
+        // 检查浏览器是否支持 Web Locks API
+        if (!navigator.locks || !navigator.locks.request) {
+            console.warn('[保活引擎] 此浏览器不支持 Web Locks API，跳过此层保活。');
+            return;
+        }
+        // 申请一把排他锁（exclusive），名称为 'kikiphone_keepalive_lock'
+        // 锁会一直持有，直到 lockReleaser() 被调用
+        navigator.locks.request('kikiphone_keepalive_lock', { mode: 'exclusive' }, () => {
+            return new Promise((resolve) => {
+                lockReleaser = resolve; // 保存释放函数，调用 resolve() 即释放锁
+            });
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // 【6】释放 Web Lock
+    // ------------------------------------------------------------------
+    function releaseWebLock() {
+        if (lockReleaser) {
+            lockReleaser();     // 调用 resolve，Promise 完成，锁被释放
+            lockReleaser = null;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 【7】启动 Web Worker 心跳线程
+    // ------------------------------------------------------------------
+    function startWorker() {
+        // 如果 Worker 已存在，先终止旧的
+        if (keepAliveWorker) {
+            keepAliveWorker.terminate();
+            keepAliveWorker = null;
+        }
+
+        try {
+            keepAliveWorker = new Worker('./keepalive-worker.js');
+
+            // 监听来自 Worker 的 PING 消息
+            keepAliveWorker.onmessage = (event) => {
+                if (event.data.type === 'PING') {
+                    handleWorkerPing();
+                }
+            };
+
+            keepAliveWorker.onerror = (err) => {
+                console.error('[保活引擎] Worker 发生错误:', err);
+            };
+
+            // 向 Worker 发送 START 指令，启动心跳
+            keepAliveWorker.postMessage({ type: 'START' });
+
+        } catch (e) {
+            console.error('[保活引擎] Worker 创建失败:', e);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 【8】终止 Web Worker 心跳线程
+    // ------------------------------------------------------------------
+    function stopWorker() {
+        if (keepAliveWorker) {
+            keepAliveWorker.postMessage({ type: 'STOP' }); // 先通知它停止定时器
+            keepAliveWorker.terminate();                    // 再彻底终止线程
+            keepAliveWorker = null;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 【9】处理 Worker 心跳 PING — 核心恢复逻辑
+    // ------------------------------------------------------------------
+    async function handleWorkerPing() {
+        // 如果 audioCtx 不存在，或者用户已手动暂停，不做任何操作
+        if (!audioCtx || isManualPause) return;
+
+        // 如果 AudioContext 被系统挂起（比如抖音抢走了音频焦点）
+        if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
+            try {
+                await audioCtx.resume();
+
+                if (audioCtx.state === 'running') {
+                    // resume 成功！重置失败计数，恢复"已激活"状态
+                    resumeFailCount = 0;
+                    toggle.checked = true;
+                    setStatus('ACTIVE');
+                    console.log('[保活引擎] 心跳恢复成功，AudioContext 已重新运行。');
+                } else {
+                    // resume 调用了但状态没变回 running
+                    resumeFailCount++;
+                    console.warn(`[保活引擎] resume 未成功，失败次数：${resumeFailCount}`);
+
+                    if (resumeFailCount >= MAX_RESUME_FAIL) {
+                        // 连续3次恢复失败，认定为不可自动恢复，进入异常暂停
+                        handleUnrecoverableError();
+                    }
+                }
+            } catch (e) {
+                resumeFailCount++;
+                console.error(`[保活引擎] resume 抛出异常，失败次数：${resumeFailCount}`, e);
+
+                if (resumeFailCount >= MAX_RESUME_FAIL) {
+                    handleUnrecoverableError();
+                }
+            }
+        }
+        // 如果状态是 running，什么都不用做，心跳只是确认一下还活着
+    }
+
+    // ------------------------------------------------------------------
+    // 【10】处理不可自动恢复的异常（连续3次 resume 失败后触发）
+    // ------------------------------------------------------------------
+    function handleUnrecoverableError() {
+        // 终止 Worker（心跳没有继续的意义了，等用户手动重试）
+        stopWorker();
+        // 释放 Web Lock
+        releaseWebLock();
+        // 开关变回关闭状态（绝对不能保持开启状态误导用户）
+        toggle.checked = false;
+        // 状态文字变为"异常暂停"
+        setStatus('ERROR');
+        console.error('[保活引擎] 连续恢复失败，进入异常暂停状态，需用户手动重试。');
+    }
+
+    // ------------------------------------------------------------------
+    // 【11】初始化并启动完整的音频保活引擎
+    //       注意：此函数必须在用户点击事件的同步调用栈内执行，
+    //       不能放在任何 setTimeout / Promise.then / await 之后。
+    // ------------------------------------------------------------------
+    async function startEngine() {
+        resumeFailCount = 0; // 重置失败计数
+
+        // -- 11.1 创建或复用 AudioContext --
+        if (!audioCtx) {
+            // 首次启动：从零创建
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) {
+                console.error('[保活引擎] 此浏览器不支持 Web Audio API。');
+                toggle.checked = false;
+                setStatus('ERROR');
+                return;
+            }
+            audioCtx = new AudioContextClass();
+
+            // 创建振荡器节点（频率设为1Hz，人耳完全无法察觉）
+            oscillator = audioCtx.createOscillator();
+            oscillator.type = 'sine';       // 正弦波，最基础的波形
+            oscillator.frequency.value = 1; // 1Hz：iOS 音频系统无法将其优化为空运算
+
+            // 创建增益节点（增益设为0.001，非零但人耳绝对听不见）
+            gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.001;    // 关键：必须是非零值，绝对不能是0
+
+            // 连接音频图：振荡器 → 增益节点 → 扬声器输出
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            // 启动振荡器（启动后不能 stop，要保活就必须一直运行）
+            oscillator.start();
+
+            // 监听 AudioContext 状态变化
+            audioCtx.onstatechange = () => {
+                console.log(`[保活引擎] AudioContext 状态变化：${audioCtx.state}`);
+
+                if (audioCtx.state === 'running') {
+                    // 变为运行中：无论何种原因，都更新为已激活（心跳 resume 成功也走这里）
+                    if (!isManualPause) {
+                        toggle.checked = true;
+                        setStatus('ACTIVE');
+                    }
+                } else if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
+                    // 被挂起或被中断
+                    if (isManualPause) {
+                        // 这是用户主动暂停导致的 suspend，正常，不报异常
+                        // isManualPause 会在 stopEngine 里设置，这里只做识别
+                        setStatus('MANUAL');
+                    }
+                    // 如果是系统/外部原因（isManualPause=false），不在这里改UI，
+                    // 交由 Worker 心跳的 handleWorkerPing 来处理（尝试恢复后再决定状态）
+                }
+            };
+        }
+
+        // -- 11.2 如果 AudioContext 已存在但被挂起（手动暂停后重新激活的情况）--
+        if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
+            try {
+                await audioCtx.resume();
+            } catch (e) {
+                console.error('[保活引擎] resume 失败，引擎无法启动。', e);
+                toggle.checked = false;
+                setStatus('ERROR');
+                return;
+            }
+        }
+
+        // -- 11.3 申请 Web Lock --
+        acquireWebLock();
+
+        // -- 11.4 启动 Worker 心跳 --
+        startWorker();
+
+        // -- 11.5 更新 UI --
+        toggle.checked = true;
+        setStatus('ACTIVE');
+        isManualPause = false;
+    }
+
+    // ------------------------------------------------------------------
+    // 【12】停止引擎（用户手动暂停）
+    // ------------------------------------------------------------------
+    async function stopEngine() {
+        // 先设置手动暂停标志位，让 onstatechange 识别这是人为操作
+        isManualPause = true;
+
+        // 停止 Worker 心跳
+        stopWorker();
+
+        // 释放 Web Lock
+        releaseWebLock();
+
+        // 挂起 AudioContext（suspend 会释放音频资源，但保留 AudioContext 对象，
+        // 下次点击开关时可以直接 resume，不需要重建整个音频图）
+        if (audioCtx && audioCtx.state === 'running') {
+            try {
+                await audioCtx.suspend();
+            } catch (e) {
+                console.warn('[保活引擎] suspend 失败:', e);
+            }
+        }
+
+        // 更新 UI
+        toggle.checked = false;
+        setStatus('MANUAL');
+    }
+
+    // ------------------------------------------------------------------
+    // 【13】开关点击事件监听
+    //       注意：这里使用 'click' 而不是 'change'，
+    //       原因：iOS 的音频授权检查的是"真实用户手势事件"，
+    //       click 事件在 iOS 上更可靠地被识别为合法的用户触摸行为。
+    // ------------------------------------------------------------------
+    toggle.addEventListener('click', async (event) => {
+        // 阻止 checkbox 的默认行为，由我们的代码手动控制 checked 状态
+        // 这样可以防止"异常暂停状态下点击后开关错误地变成开启"
+        event.preventDefault();
+
+        const currentStatus = statusText.textContent;
+
+        if (currentStatus === STATUS.ACTIVE) {
+            // 当前已激活 → 执行手动暂停
+            await stopEngine();
+
+        } else if (
+            currentStatus === STATUS.PENDING ||
+            currentStatus === STATUS.MANUAL ||
+            currentStatus === '' // 初始化时 statusText 为空，等同于 PENDING
+        ) {
+            // 当前待激活或已手动暂停 → 执行启动
+            // 【重要】startEngine 必须在这里同步调用（不能包在 setTimeout 里），
+            // 因为 click 事件的用户授权只在这个同步调用栈里有效。
+            await startEngine();
+
+        } else if (currentStatus === STATUS.ERROR) {
+            // 当前异常暂停 → 尝试重试恢复
+            // 重试走完整的 startEngine 流程
+            await startEngine();
+            // 如果 startEngine 执行后状态仍然是 ERROR（说明恢复失败），
+            // 则保持开关在关闭状态，不做任何改变（已在 startEngine 内部处理）
+        }
+    });
+
+    // ------------------------------------------------------------------
+    // 【14】初始状态：页面加载时设置为"待激活"
+    // ------------------------------------------------------------------
+    toggle.checked = false;
+    setStatus('PENDING');
+}
+
+// ===================================================================
+// 【后台保活引擎】结束
+// ===================================================================
+
+
+// ===================================================================
 // 【【【新增：将 client.js 的内容直接粘贴到这里】】】
 // ===================================================================
 
@@ -8240,4 +8572,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // 启动应用
     initializeApp();
+    initKeepAliveEngine();
+
 });

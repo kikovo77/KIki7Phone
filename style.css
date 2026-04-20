@@ -738,6 +738,60 @@
        border-radius: 50%;
    }
 
+   /* ===================================================================== */
+   /* 【后台保活】独立样式区 — 所有样式仅作用于 keepalive 相关元素，不影响其他 */
+   /* ===================================================================== */
+
+   /* 后台功能图标容器 — 独立定位，可单独调整上下左右 */
+   #keepalive-icon-wrapper {
+       position: relative;
+       top: 0px;
+       /* 向下为正，向上为负，可自行调整 */
+       left: 0px;
+       /* 向右为正，向左为负，可自行调整 */
+   }
+
+   /* 状态监测图标容器 — 独立定位，可单独调整上下左右 */
+   #status-monitor-icon-wrapper {
+       position: relative;
+       top: 0px;
+       /* 向下为正，向上为负，可自行调整 */
+       left: 0px;
+       /* 向右为正，向左为负，可自行调整 */
+   }
+
+   /* 后台保活整行容器 — 确保开关和状态文字能靠右排列 */
+   #keepalive-settings-item {
+       display: flex;
+       align-items: center;
+   }
+
+   /* 状态文字 — 独立 class，你可以随时在这里修改字体大小和粗细 */
+   .keepalive-status-text {
+       font-size: 13px;
+       /* 修改这个数值来调整状态文字大小 */
+       font-weight: 400;
+       /* 修改这个数值来调整粗细：400正常 500中等 700粗体 */
+       color: #888888;
+       /* 状态文字颜色，灰色 */
+       margin-left: auto;
+       /* 把状态文字推到行的右侧区域 */
+       margin-right: 10px;
+       /* 和开关之间留10px间距 */
+       white-space: nowrap;
+       /* 防止文字换行 */
+       flex-shrink: 0;
+       /* 防止文字被压缩消失 */
+   }
+
+   /* 后台保活开关 — 复用 .switch 的全部视觉样式，此 class 只负责布局独立性 */
+   /* 注意：.keepalive-switch 要和 .switch 一起写在 HTML label 上，视觉样式由 .switch 提供 */
+   /* 此处仅做布局补充，确保开关不会被其他规则影响 */
+   .keepalive-switch {
+       flex-shrink: 0;
+       /* 防止开关在flex布局中被压缩 */
+   }
+
    /* --- 3.5 通用头像样式 --- */
 
    /* 统一为项目中的多种头像添加白色描边和阴影，增加立体感 */
