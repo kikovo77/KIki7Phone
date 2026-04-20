@@ -234,14 +234,6 @@ function initKeepAliveEngine() {
         if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
             try {
                 await audioCtx.resume();
-                // 【Safari 兜底】resume() resolve 之后直接检查 state，
-                // 不依赖 onstatechange（Safari 旧版该回调不可靠）
-                if (audioCtx.state !== 'running') {
-                    console.error('[保活引擎] resume 后状态不是 running，Safari 可能拒绝了授权。', audioCtx.state);
-                    toggle.checked = false;
-                    setStatus('ERROR');
-                    return;
-                }
             } catch (e) {
                 console.error('[保活引擎] resume 失败，引擎无法启动。', e);
                 toggle.checked = false;
@@ -250,29 +242,8 @@ function initKeepAliveEngine() {
             }
         }
 
-        // -- 11.2.5 首次创建后的 Safari 兜底检查 --
-        // new AudioContext() 在 Safari 里有时创建出来就是 suspended 状态，
-        // 需要在这里再确认一次并尝试 resume
-        if (audioCtx.state === 'suspended') {
-            try {
-                await audioCtx.resume();
-                if (audioCtx.state !== 'running') {
-                    console.error('[保活引擎] 首次 resume 失败，Safari 不认可当前手势为合法授权。');
-                    toggle.checked = false;
-                    setStatus('ERROR');
-                    return;
-                }
-            } catch (e) {
-                console.error('[保活引擎] 首次 resume 异常:', e);
-                toggle.checked = false;
-                setStatus('ERROR');
-                return;
-            }
-        }
-
         // -- 11.3 申请 Web Lock --
         acquireWebLock();
-
 
         // -- 11.4 启动 Worker 心跳 --
         startWorker();
@@ -317,53 +288,43 @@ function initKeepAliveEngine() {
     //       原因：iOS 的音频授权检查的是"真实用户手势事件"，
     //       click 事件在 iOS 上更可靠地被识别为合法的用户触摸行为。
     // ------------------------------------------------------------------
-    // 【跨浏览器兼容的开关触发方案】
-    // 问题背景：
-    // - 桌面端：直接监听 click 会因为 label+input 双重触发导致逻辑执行两次。
-    // - iOS Safari：change 事件不被 Safari 识别为"合法用户原始手势"，
-    //   导致在 change 回调里调用 new AudioContext() 或 resume() 时被拒绝授权。
-    // - iOS Edge / 其他浏览器：touchend 或 click 均可正常授权。
-    //
-    // 解决方案：
-    // 统一监听 toggle（input 元素本身）的 click 事件（不是 label 的 click），
-    // input 元素自身的 click 不会被 label 双重触发，且在 iOS Safari 上被认可为原始手势。
-    // 用一个防抖变量确保极端情况下也只执行一次。
+    toggle.addEventListener('change', async () => {
+        // 【修改说明】
+        // 改用 'change' 事件而不是 'click'，原因：
+        // 桌面浏览器点击 label 包裹的 checkbox 时，'click' 会被触发两次（label一次+input一次），
+        // 导致逻辑执行两次，手机端没有这个问题。
+        // 'change' 事件只在 checkbox 的 checked 状态真正发生变化时触发一次，跨平台一致。
+        // 同时移除 event.preventDefault()，改为逻辑失败时手动回滚 checked 状态。
 
-    let isProcessing = false; // 防止异步操作期间重复触发
-
-    toggle.addEventListener('click', async (event) => {
-        // 阻止 checkbox 的默认翻转，我们手动控制
-        event.preventDefault();
-
-        // 如果上一次操作还没结束（startEngine/stopEngine 是异步的），直接忽略本次点击
-        if (isProcessing) return;
-        isProcessing = true;
-
+        // 浏览器已经帮我们翻转了 checked，我们读它的当前值来判断用户意图：
+        // checked=true 表示用户想要开启，checked=false 表示用户想要关闭
+        const wantsToEnable = toggle.checked;
         const currentStatus = statusText.textContent;
 
-        try {
+        if (wantsToEnable) {
+            // 用户想开启（待激活 / 已手动暂停 / 异常暂停 → 尝试激活）
+            // 注意：'change' 事件在 iOS Safari 上同样被识别为合法用户手势，
+            // 因此 AudioContext.resume() 在这里调用是有效的。
+            await startEngine();
+            // 如果 startEngine 内部因为错误把 toggle.checked 设回了 false，
+            // 这里不需要再做任何处理，startEngine 内部已经处理好了。
+
+        } else {
+            // 用户想关闭
             if (currentStatus === STATUS.ACTIVE) {
-                // 当前已激活 → 手动暂停
+                // 当前已激活 → 执行手动暂停
                 await stopEngine();
-
-            } else if (
-                currentStatus === STATUS.PENDING ||
-                currentStatus === STATUS.MANUAL ||
-                currentStatus === ''
-            ) {
-                // 当前待激活或已手动暂停 → 启动
-                await startEngine();
-
             } else if (currentStatus === STATUS.ERROR) {
-                // 当前异常暂停 → 重试
-                await startEngine();
+                // 当前异常暂停状态下，用户点击了开关（此时开关本来是关闭的，
+                // 'change' 不会被触发，因为 checked 已经是 false，再点不会 change）
+                // 这个分支理论上不会被触发，但作为防御性代码保留
+                toggle.checked = false;
+            } else {
+                // 其他非预期情况，强制保持关闭
+                toggle.checked = false;
             }
-        } finally {
-            // 无论成功还是失败，都解除处理锁，允许下次点击
-            isProcessing = false;
         }
     });
-
 
 
     // ------------------------------------------------------------------
