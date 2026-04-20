@@ -10,14 +10,14 @@
     "orientation": "portrait-primary",
     "icons": [
         {
-            "src": "https://tc-new.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250912/I4Xl/1206X1501/IMG_6556.jpeg/webp",
+            "src": "https://i.postimg.cc/mg1bnQYF/IMG-8187.jpg",
             "sizes": "192x192",
-            "type": "image/webp"
+            "type": "image/jpeg"
         },
         {
-            "src": "https://tc-new.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250912/I4Xl/1206X1501/IMG_6556.jpeg/webp",
+            "src": "https://i.postimg.cc/mg1bnQYF/IMG-8187.jpg",
             "sizes": "512x512",
-            "type": "image/webp"
+            "type": "image/jpeg"
         }
     ],
     "gcm_sender_id": "103953800507",

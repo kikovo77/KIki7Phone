@@ -855,7 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedData = await db.get('mePageData') || {};
         // 设置默认值，防止第一次加载时出错
         mePageData = {
-            avatar: savedData.avatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp',
+            avatar: savedData.avatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg',
             name: savedData.name || 'Name',
             signature: savedData.signature || '点我输入自定义个性签名...'
         };
@@ -1020,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedStatusMessages = await db.get('coupleStatusMessages') || {};
 
         coupleSpaceSettings = {
-            myAvatar: savedSettings.myAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp',
+            myAvatar: savedSettings.myAvatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg',
             partnerChatId: savedSettings.partnerChatId || null,
             // 【新增】绑定日期
             bindingDate: savedSettings.bindingDate || null
@@ -1067,7 +1067,7 @@ document.addEventListener('DOMContentLoaded', () => {
             item.className = 'couple-invite-item';
             item.addEventListener('click', () => handleInviteContact(chat.id, chat.name));
 
-            const avatarUrl = chat.settings?.aiAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+            const avatarUrl = chat.settings?.aiAvatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg';
 
             item.innerHTML = `
                         <img src="${avatarUrl}" class="couple-invite-avatar">
@@ -1132,10 +1132,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const chat = chats.find(c => c.id === activeChatId);
         if (!chat) return;
 
-        const defaultAvatar = 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+        const defaultAvatar = 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg';
         inviteModalAiAvatar.src = chat.settings.aiAvatar || defaultAvatar;
         inviteModalUserAvatar.src = chat.settings.userAvatar || defaultAvatar;
-
         // 为了确保每次事件都是全新的，我们重新获取按钮元素
         const currentAcceptBtn = document.getElementById('invite-accept-btn');
         const currentRejectBtn = document.getElementById('invite-reject-btn');
@@ -1291,7 +1290,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 保留对旧元素的更新，以防万一，虽然它现在被隐藏了
             promptText.innerHTML = `我们在一起<br>${String(days).padStart(3, '0')}天`;
 
-            partnerAvatarImg.src = partnerChat.settings.aiAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+            partnerAvatarImg.src = partnerChat.settings.aiAvatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg';
             partnerAvatarImg.style.display = 'block';
             partnerAvatarPlaceholder.style.display = 'none';
 
@@ -1559,7 +1558,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedStatusMessages = await db.get('coupleStatusMessages') || {};
 
         coupleSpaceSettings = {
-            myAvatar: savedSettings.myAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp',
+            myAvatar: savedSettings.myAvatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg',
             partnerChatId: savedSettings.partnerChatId || null,
             bindingDate: savedSettings.bindingDate || null,
             customBackground: savedSettings.customBackground || { image: '' },
@@ -2148,7 +2147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         contactItem.className = 'contact-item';
         contactItem.dataset.chatId = chat.id;
 
-        const avatarUrl = (chat.settings && chat.settings.aiAvatar) ? chat.settings.aiAvatar : 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+        const avatarUrl = (chat.settings && chat.settings.aiAvatar) ? chat.settings.aiAvatar : 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg';
 
         let lastMsgText = '...';
         let lastMsgTimestamp = null;
@@ -2347,7 +2346,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             chatContactName.textContent = chat.settings.aiName || chat.name;
 
-            const aiAvatarUrl = chat.settings.aiAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+            const aiAvatarUrl = chat.settings.aiAvatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg';
 
             // 同步顶栏中间的AI头像
             const headerAiAvatar = document.getElementById('chat-header-ai-avatar');
@@ -2451,7 +2450,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageWrapper.dataset.messageId = msg.id;
         messageWrapper.dataset.timestamp = msg.timestamp;
 
-        const defaultAvatar = 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+        const defaultAvatar = 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg';
         const avatar = document.createElement('img');
         avatar.className = 'chat-avatar';
         avatar.src = msg.role === 'user' ? (chat.settings.userAvatar || defaultAvatar) : (chat.settings.aiAvatar || defaultAvatar);
@@ -3722,7 +3721,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         insertMode.tempMessages.forEach(msg => {
             const chat = chats.find(c => c.id === activeChatId);
-            const defaultAvatar = 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+            const defaultAvatar = 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg';
 
             // --- 1. 创建所有需要的元素 ---
             const itemWrapper = document.createElement('div');
@@ -4099,9 +4098,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const aiSettingsNameDisplay = document.getElementById('ai-settings-name-display');
         const userSettingsNameDisplay = document.getElementById('user-settings-name-display');
 
-        aiSettingsAvatar.src = chat.settings.aiAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+        aiSettingsAvatar.src = chat.settings.aiAvatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg';
         aiSettingsNameDisplay.textContent = chat.settings.aiName || chat.name;
-        userSettingsAvatar.src = chat.settings.userAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+        userSettingsAvatar.src = chat.settings.userAvatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg';
         userSettingsNameDisplay.textContent = chat.settings.userName || '';
 
         // 【V4.0 新增】确保 isPinned 属性存在，并设置开关状态
@@ -4260,12 +4259,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- 步骤 4: 更新预览区头像 (这部分不变) ---
         const chat = chats.find(c => c.id === activeChatId);
-        const defaultAvatar = 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+        const defaultAvatar = 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg';
         if (chat) {
             document.getElementById('preview-ai-avatar').src = chat.settings.aiAvatar || defaultAvatar;
             document.getElementById('preview-user-avatar').src = chat.settings.userAvatar || defaultAvatar;
         }
-
         // --- 步骤 5: 按优先级应用自定义样式 ---
         // 最高优先级：自定义CSS
         if (css && css.trim() !== '') {
@@ -4348,7 +4346,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 1. 填充基本信息
-        aiInfoAvatar.src = chat.settings.aiAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+        aiInfoAvatar.src = chat.settings.aiAvatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg';
         aiInfoNameDisplay.textContent = chat.settings.aiName || chat.name;
         aiPersonaInput.value = chat.settings.aiPersona || '';
         aiRelationshipInput.value = chat.settings.aiRelationship || '';
@@ -4371,7 +4369,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!chat) return;
 
         // 1. 填充信息
-        myInfoAvatar.src = chat.settings.userAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp';
+        myInfoAvatar.src = chat.settings.userAvatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg';
         myInfoNameDisplay.textContent = chat.settings.userName || '未设置';
         myPersonaInput.value = chat.settings.userPersona || '';
         mySupplementaryInfoInput.value = chat.settings.userSupplementaryInfo || '';
@@ -4965,7 +4963,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const forbiddenWordsItem = document.createElement('div');
         forbiddenWordsItem.className = 'preset-list-item forbidden-words-item';
         forbiddenWordsItem.innerHTML = `
-                    <img src="${presets.forbiddenWords.avatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp'}" class="preset-list-avatar" data-type="forbidden-words" data-id="forbidden_words">
+                    <img src="${presets.forbiddenWords.avatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg'}" class="preset-list-avatar" data-type="forbidden-words" data-id="forbidden_words">
                     <span class="preset-list-name">禁词</span>
                     <div class="preset-list-actions">
                         <button data-action="edit-forbidden-words">
@@ -4981,7 +4979,7 @@ document.addEventListener('DOMContentLoaded', () => {
             item.className = 'preset-list-item';
             item.dataset.id = preset.id;
             item.innerHTML = `
-                        <img src="${preset.avatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp'}" class="preset-list-avatar" data-type="role" data-id="${preset.id}">
+                        < img src="${preset.avatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg'}" class="preset-list-avatar" data-type="role" data-id="${preset.id}">
                         <span class="preset-list-name">${preset.name}</span>
                         <div class="preset-list-actions">
                             <button data-action="delete-role" data-id="${preset.id}">
@@ -5600,7 +5598,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // 检查“我”的头像，这里的默认头像是代码里写死的，所以我们直接判断
-        const defaultAvatarUrl = "https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp";
+        const defaultAvatarUrl = "https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg";
         if (coupleSpaceSettings.myAvatar && coupleSpaceSettings.myAvatar !== defaultAvatarUrl) {
             myAvatarWrapper.classList.add('is-customized');
         } else {
@@ -7625,9 +7623,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             `).join('') : ''}
                         </div>
 
-                        <div class="status-post-divider"></div>
+<div class="status-post-divider"></div>
                         <div class="status-post-comment-area" data-status-id="${status.id}">
-                            <img src="${coupleSpaceSettings.myAvatar || 'https://tc.z.wiki/autoupload/f/6Acfaf5snU3W5EM9A3dcliMqqis0rwPOdE2pkJCFqrWyl5f0KlZfm6UsKj-HyTuv/20250911/GcRW/1206X1185/IMG_7210.jpeg/webp'}" class="status-post-comment-avatar">
+                            <img src="${coupleSpaceSettings.myAvatar || 'https://i.postimg.cc/x87MLPjX/quality-restoration-20260420shang-wu103557684.jpg'}" class="status-post-comment-avatar">
                             <input type="text" class="status-post-comment-input" placeholder="说点什么吧...">
                             <span class="status-post-comment-send">发送</span>
                         </div>
