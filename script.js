@@ -2613,7 +2613,7 @@ document.addEventListener('DOMContentLoaded', () => {
         newContactNameInput.focus();
     }
 
-    function handleCreateNewContact() {
+    async function handleCreateNewContact() {
         const name = newContactNameInput.value.trim();
         if (!name) {
             alert("名字不能为空！");
@@ -2625,7 +2625,6 @@ document.addEventListener('DOMContentLoaded', () => {
             name: name,
             history: [],
             isPinned: false,
-            // 【V4.2 新增】确保新联系人有 unreadCount 属性
             unreadCount: 0,
             settings: {
                 aiName: name,
@@ -2654,16 +2653,18 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         chats.push(newChat);
-        saveChats();
 
-        // 【【【核心修复】】】 在这里，我们确保在关闭弹窗和跳转之前，就立刻刷新联系人列表
+        // 【核心修复】必须 await，确保 IndexedDB 首次初始化完成后再执行任何 DOM 操作。
+        // 不加 await 时，首次打开应用时 IndexedDB 还在初始化，
+        // 两次并发写入会导致 DOM 操作（关闭弹窗、跳转界面）被阻塞，
+        // 用户看到的就是按钮点了没反应，但数据其实已经写入了。
+        await saveChats();
+
         renderContactList();
-
         addContactModal.classList.remove('visible');
-
-        // 跳转到新创建的聊天，这个函数内部会负责渲染聊天界面
         openChat(newChat.id);
     }
+
 
     function openChat(chatId) {
         activeChatId = chatId;
@@ -3183,10 +3184,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         generateBtn.disabled = true;
 
-        // --- 新增：正在输入中效果 ---
+        // --- 正在输入中效果（按主题分开触发，不重叠）---
         const originalName = chatContactName.textContent; // 记住原名
-        chatContactName.textContent = "正在输入中...";
-        chatContactName.classList.add('typing-animation');
+        if (!isPopTheme) {
+            // 非pop主题（iMessage/微信等）：用顶栏名字变成"正在输入中..." + 呼吸灯
+            chatContactName.textContent = "正在输入中...";
+            chatContactName.classList.add('typing-animation');
+        }
+        // pop主题：不动顶栏名字，只用 animateStatusText(true) 那套三点动画（已在上方触发）
+
 
         const getAssociatedContent = (id, type, visitedIds = new Set()) => {
             const uniqueId = `${type}_${id}`;

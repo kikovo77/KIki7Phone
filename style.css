@@ -6062,7 +6062,6 @@
    body.theme-pop #chat-interface-screen .header h1 {
        position: absolute;
        left: 49.1%;
-       top: 50%;
        transform: translate(-50%, -50%);
        padding-top: 15px;
        color: #202020 !important;
@@ -6327,7 +6326,7 @@
        /* 开启绝对定位，让它浮动起来 */
        left: 37px;
        /* 距离左侧的距离，您可以微调这个值 */
-       top: 39px;
+       top: 74px;
        /* 距离顶部的距离，您可以微调这个值 */
        font-size: 14.8px;
        /* 与标题一样的大小 */
@@ -6706,7 +6705,7 @@
              * - 数值越大，名字越往下移动。
              * - 数值越小（甚至为负数），名字越往上移动。
             */
-       top: 44%;
+       top: 54%;
        /* 您可以在这里修改这个值 */
    }
 
@@ -6834,7 +6833,7 @@
 
        /* --- 【【【全新的】】】“在线/正在输入”状态独立微调区 --- */
        /* 说明：这里的 top 和 left 值完全复制自您旧的 #chat-contact-status 样式 */
-       top: 60px;
+       top: 86px;
        left: calc(50% + -3px);
 
        /* --- 容器尺寸与字体样式 --- */
